@@ -216,6 +216,7 @@
     });
 
     async function submitToMap() {
+      let image = window.uploadedImage;
       let imageUrl = 'https://i.imgur.com/bLBkpWR.png';
       const layer = document.getElementById('layerSelect').value;
       const description = document.getElementById('descriptionInput').value;
@@ -230,20 +231,23 @@
 
       const pointData = { lat: window.lat, lng: window.lng, imageUrl, layer, description };
       try {
-        const res = await fetch('/functions/save-point', {
+        const res = await fetch('/.netlify/functions/save-point', {  // Cambiado
           method: 'POST',
           body: JSON.stringify(pointData)
         });
-        console.log('Status:', res.status);  // Agregado
-        const text = await res.text();       // Agregado: texto crudo
-        console.log('Respuesta cruda:', text);
-        const result = JSON.parse(text);     // Intentamos parsear
+        const result = await res.json();
         console.log('Respuesta de Netlify:', result);
         alert(result.message);
       } catch (error) {
         console.error('Error al enviar a Netlify:', error);
         alert('Hubo un error al guardar el punto. Revisá la consola.');
       }
+      document.getElementById('fileInput').value = '';
+      document.getElementById('preview').src = '';
+      document.getElementById('descriptionInput').value = '';
+      window.uploadedImage = null;
+      document.querySelector('input[value="noPhoto"]').checked = true;
+      toggleImageOptions();
     }
 
   </script>
