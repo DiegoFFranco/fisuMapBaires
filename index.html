@@ -1,65 +1,98 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Fisu Mapa Buenos Aires</title>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      text-align: center; 
-      background-color: black; 
-      color: white; 
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: black;
+      color: white;
     }
-    #map { width: 600px; height: 450px; margin: 20px auto; }
-    #imageOptions { 
-      display: none; 
-      margin: 20px auto; 
+
+    #map {
+      width: 600px;
+      height: 450px;
+      margin: 20px auto;
     }
-    #imageArea { 
-      border: 1px solid white; 
-      width: 300px; 
-      height: 200px; 
-      margin: 20px auto; 
-      background-color: #333; 
+
+    #imageOptions {
+      display: none;
+      margin: 20px auto;
     }
-    #descriptionInput { 
-      width: 300px; 
-      height: 50px; 
-      padding: 5px; 
-      background-color: #333; 
-      color: white; 
-      border: 1px solid white; 
-      vertical-align: top; 
+
+    #imageArea {
+      border: 1px solid white;
+      width: 300px;
+      height: 200px;
+      margin: 20px auto;
+      background-color: #333;
     }
-    #layerSelect { 
-      width: 300px; 
-      padding: 5px; 
-      background-color: #333; 
-      color: white; 
-      border: 1px solid white; 
+
+    #descriptionInput {
+      width: 300px;
+      height: 50px;
+      padding: 5px;
+      background-color: #333;
+      color: white;
+      border: 1px solid white;
+      vertical-align: top;
     }
-    #preview { max-width: 300px; margin: 10px auto; display: block; }
-    button, input[type="file"] { 
-      padding: 10px; 
-      font-size: 16px; 
-      margin: 5px; 
-      background-color: #555; 
-      color: white; 
-      border: 1px solid white; 
+
+    #layerSelect {
+      width: 300px;
+      padding: 5px;
+      background-color: #333;
+      color: white;
+      border: 1px solid white;
     }
-    input[type="text"] { 
-      width: 300px; 
-      padding: 5px; 
-      background-color: #333; 
-      color: white; 
-      border: 1px solid white; 
+
+    #preview {
+      max-width: 300px;
+      margin: 10px auto;
+      display: block;
     }
-    button:hover, input[type="file"]:hover { background-color: #777; }
-    label { margin: 0 10px; }
-    .category-row { display: flex; justify-content: center; align-items: flex-start; gap: 10px; margin: 20px 0; }
+
+    button,
+    input[type="file"] {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px;
+      background-color: #555;
+      color: white;
+      border: 1px solid white;
+    }
+
+    input[type="text"] {
+      width: 300px;
+      padding: 5px;
+      background-color: #333;
+      color: white;
+      border: 1px solid white;
+    }
+
+    button:hover,
+    input[type="file"]:hover {
+      background-color: #777;
+    }
+
+    label {
+      margin: 0 10px;
+    }
+
+    .category-row {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 20px 0;
+    }
   </style>
 </head>
+
 <body>
   <h1>Fisu Mapa Buenos Aires</h1>
   <input type="text" id="direccion" placeholder="Escribí la dirección (ej: Obelisco, Buenos Aires)">
@@ -183,8 +216,7 @@
     });
 
     async function submitToMap() {
-      let image = window.uploadedImage;
-      let imageUrl = 'https://i.imgur.com/bLBkpWR.png'; // Foto por defecto
+      let imageUrl = 'https://i.imgur.com/bLBkpWR.png';
       const layer = document.getElementById('layerSelect').value;
       const description = document.getElementById('descriptionInput').value;
 
@@ -193,33 +225,24 @@
         return;
       }
 
-      if (image) {
-        const formData = new FormData();
-        formData.append('image', image);
-        const response = await fetch('https://api.imgur.com/3/image', {
-          method: 'POST',
-          headers: { Authorization: '7e58867f060b98f' }, // Reemplazá con tu Client-ID
-          body: formData
-        });
-        const data = await response.json();
-        imageUrl = data.data.link;
-      }
+      console.log('Enviando punto:', { lat: window.lat, lng: window.lng, layer, description });
+      console.log('Usando foto por defecto:', imageUrl);
 
       const pointData = { lat: window.lat, lng: window.lng, imageUrl, layer, description };
-      const res = await fetch('/.netlify/functions/save-point', {
-        method: 'POST',
-        body: JSON.stringify(pointData)
-      });
-      const result = await res.json();
-      alert(result.message);
-
-      document.getElementById('fileInput').value = '';
-      document.getElementById('preview').src = '';
-      document.getElementById('descriptionInput').value = '';
-      window.uploadedImage = null;
-      document.querySelector('input[value="noPhoto"]').checked = true;
-      toggleImageOptions();
+      try {
+        const res = await fetch('/functions/save-point', {  // ¡Cambiado aquí!
+          method: 'POST',
+          body: JSON.stringify(pointData)
+        });
+        const result = await res.json();
+        console.log('Respuesta de Netlify:', result);
+        alert(result.message);
+      } catch (error) {
+        console.error('Error al enviar a Netlify:', error);
+        alert('Hubo un error al guardar el punto. Revisá la consola.');
+      }
     }
   </script>
 </body>
+
 </html>
