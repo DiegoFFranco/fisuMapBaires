@@ -230,11 +230,14 @@
 
       const pointData = { lat: window.lat, lng: window.lng, imageUrl, layer, description };
       try {
-        const res = await fetch('/functions/save-point', {  // ¡Cambiado aquí!
+        const res = await fetch('/functions/save-point', {
           method: 'POST',
           body: JSON.stringify(pointData)
         });
-        const result = await res.json();
+        console.log('Status:', res.status);  // Agregado
+        const text = await res.text();       // Agregado: texto crudo
+        console.log('Respuesta cruda:', text);
+        const result = JSON.parse(text);     // Intentamos parsear
         console.log('Respuesta de Netlify:', result);
         alert(result.message);
       } catch (error) {
@@ -242,6 +245,7 @@
         alert('Hubo un error al guardar el punto. Revisá la consola.');
       }
     }
+
   </script>
 </body>
 
