@@ -4,8 +4,8 @@ const path = require('path');
 const geojsonPath = path.join(__dirname, 'points.geojson');
 
 exports.handler = async (event) => {
-  const { lat, lng, imageUrl, layer, description } = JSON.parse(event.body);
-  console.log(`Punto recibido: Lat ${lat}, Lng ${lng}, Foto: ${imageUrl}, Capa: ${layer}, Descripción: ${description}`);
+  const { latitude, longitude, imageUrl, layer, description } = JSON.parse(event.body);
+  console.log(`Punto recibido: Lat ${latitude}, Lng ${longitude}, Foto: ${imageUrl}, Capa: ${layer}, Descripción: ${description}`);
 
   let geojson = { type: 'FeatureCollection', features: [] };
   try {
@@ -17,10 +17,10 @@ exports.handler = async (event) => {
 
   const newFeature = {
     type: 'Feature',
-    geometry: { type: 'Point', coordinates: [lng, lat] },
+    geometry: { type: 'Point', coordinates: [longitude, latitude] },
     properties: {
       layer,
-      description: imageUrl ? `${description} ${imageUrl}` : description // Incluye {{URL}}
+      description: imageUrl ? `${description} ${imageUrl}` : description
     }
   };
 
@@ -29,6 +29,6 @@ exports.handler = async (event) => {
 
   return {
     statusCode: 200,
-    body: JSON.stringify({ message: 'Punto guardado para uMap' })
+    body: JSON.stringify({ message: 'Punto guardado en GeoJSON' })
   };
 };
