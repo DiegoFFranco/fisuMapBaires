@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-const geojsonPath = path.join(__dirname, 'points.geojson');
+const geojsonPath = '/tmp/points.geojson';
 
 exports.handler = async () => {
   try {

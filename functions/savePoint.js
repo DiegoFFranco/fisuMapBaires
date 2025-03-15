@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-const geojsonPath = path.join(__dirname, 'points.geojson');
+const geojsonPath = '/tmp/points.geojson';
 
 exports.handler = async (event) => {
   const { latitude, longitude, imageUrl, layer, description } = JSON.parse(event.body);
@@ -12,7 +12,7 @@ exports.handler = async (event) => {
     const existingData = await fs.readFile(geojsonPath, 'utf8');
     geojson = JSON.parse(existingData);
   } catch (error) {
-    console.log('No hay GeoJSON previo');
+    console.log('No hay GeoJSON previo en /tmp');
   }
 
   const newFeature = {
