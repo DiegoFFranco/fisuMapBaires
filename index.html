@@ -37,6 +37,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     let latitude, longitude;
+    let currentMarker = null; // Para rastrear el marcador actual
     const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -58,11 +59,14 @@
       })
       .catch(error => console.log('No hay puntos previos:', error));
 
-    // Clic en el mapa
+    // Clic en el mapa: un solo marcador
     map.on('click', (event) => {
       latitude = event.latlng.lat;
       longitude = event.latlng.lng;
-      L.marker([latitude, longitude]).addTo(map);
+      if (currentMarker) {
+        map.removeLayer(currentMarker); // Borra el marcador anterior
+      }
+      currentMarker = L.marker([latitude, longitude]).addTo(map);
     });
 
     // Buscar dirección con Nominatim
@@ -74,8 +78,11 @@
         if (data.length > 0) {
           latitude = parseFloat(data[0].lat);
           longitude = parseFloat(data[0].lon);
+          if (currentMarker) {
+            map.removeLayer(currentMarker);
+          }
+          currentMarker = L.marker([latitude, longitude]).addTo(map);
           map.setView([latitude, longitude], 15);
-          L.marker([latitude, longitude]).addTo(map);
         } else {
           alert('No se encontró la dirección.');
         }
@@ -99,7 +106,7 @@
         return;
       }
 
-      let imageUrl = 'https://i.imgur.com/bLBkpWR.png'; // Default
+      let imageUrl = 'https://i.imgur.com/bLBkpWR.png';
       if (photoInput.files.length > 0) {
         const formData = new FormData();
         formData.append('image', photoInput.files[0]);
@@ -134,7 +141,11 @@
         });
         const result = await response.json();
         console.log('Respuesta:', result);
-        alert('Punto enviado. Editá points.geojson manualmente y subilo al repo. Luego importalo en uMap.');
+        alert(`${result.message}\n\n${JSON.stringify(result.geojson, null, 2)}`);
+        if (currentMarker) {
+          map.removeLayer(currentMarker); // Borra el marcador temporal tras enviar
+          currentMarker = null;
+        }
         L.marker([latitude, longitude]).bindPopup(`<b>${title}</b><br>Subido por: ${user}<br>${description}<br><img src="${imageUrl}" width="100">`).addTo(map);
       } catch (error) {
         console.error('Error:', error);
