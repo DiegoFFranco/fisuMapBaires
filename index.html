@@ -23,8 +23,12 @@
     <select id="layerSelect">
       <option value="anon">Anónimos</option>
     </select><br>
+    <label>Usuario:</label>
+    <input type="text" id="userInput" placeholder="Ej: JuanPerez o anónimo"><br>
+    <label>Título:</label>
+    <input type="text" id="titleInput" placeholder="Ej: Punto 1"><br>
     <label>Descripción:</label>
-    <input type="text" id="descriptionInput"><br>
+    <input type="text" id="descriptionInput" placeholder="Detalles del punto"><br>
     <label>Foto (opcional):</label>
     <input type="file" id="photoInput" accept="image/*" capture="environment"><br>
     <button onclick="submitPoint()">Enviar Punto</button>
@@ -38,15 +42,17 @@
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
-    // Cargar puntos iniciales
-    fetch('/.netlify/functions/getPoints')
+    // Cargar puntos desde GitHub
+    fetch('https://raw.githubusercontent.com/DiegoFFranco/fisuMapBaires/main/points.geojson')
       .then(response => response.json())
       .then(data => {
         L.geoJSON(data, {
           onEachFeature: (feature, layer) => {
+            const title = feature.properties.title || 'Sin título';
             const description = feature.properties.description || 'Sin descripción';
+            const user = feature.properties.user || 'Anónimo';
             const imageMatch = feature.properties.description.match(/{{https:\/\/i\.imgur\.com\/[^}]+}}/);
-            layer.bindPopup(`${description}<br>${imageMatch ? `<img src="${imageMatch[0].slice(2, -2)}" width="100">` : ''}`);
+            layer.bindPopup(`<b>${title}</b><br>Subido por: ${user}<br>${description}<br>${imageMatch ? `<img src="${imageMatch[0].slice(2, -2)}" width="100">` : ''}`);
           }
         }).addTo(map);
       })
@@ -78,11 +84,18 @@
 
     async function submitPoint() {
       const layer = document.getElementById('layerSelect').value;
+      const user = document.getElementById('userInput').value || 'Anónimo';
+      const title = document.getElementById('titleInput').value;
       const description = document.getElementById('descriptionInput').value;
       const photoInput = document.getElementById('photoInput');
 
       if (!latitude || !longitude) {
         alert('Hacé clic en el mapa o buscá una dirección.');
+        return;
+      }
+
+      if (!title) {
+        alert('Ingresá un título para el punto.');
         return;
       }
 
@@ -108,6 +121,8 @@
         longitude,
         imageUrl: `{{${imageUrl}}}`,
         layer,
+        user,
+        title,
         description
       };
 
@@ -119,19 +134,8 @@
         });
         const result = await response.json();
         console.log('Respuesta:', result);
-        alert('Punto enviado. Aparece en fisu ahora. Importalo manualmente en uMap en "anon".');
-        fetch('/.netlify/functions/getPoints')
-          .then(res => res.json())
-          .then(data => {
-            map.eachLayer(layer => { if (layer instanceof L.Marker) map.removeLayer(layer); });
-            L.geoJSON(data, {
-              onEachFeature: (feature, layer) => {
-                const description = feature.properties.description || 'Sin descripción';
-                const imageMatch = feature.properties.description.match(/{{https:\/\/i\.imgur\.com\/[^}]+}}/);
-                layer.bindPopup(`${description}<br>${imageMatch ? `<img src="${imageMatch[0].slice(2, -2)}" width="100">` : ''}`);
-              }
-            }).addTo(map);
-          });
+        alert('Punto enviado. Editá points.geojson manualmente y subilo al repo. Luego importalo en uMap.');
+        L.marker([latitude, longitude]).bindPopup(`<b>${title}</b><br>Subido por: ${user}<br>${description}<br><img src="${imageUrl}" width="100">`).addTo(map);
       } catch (error) {
         console.error('Error:', error);
         alert('Error al enviar. Revisá la consola.');
