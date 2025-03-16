@@ -34,6 +34,12 @@
       max-height: 200px; 
       width: auto; 
       object-fit: contain; 
+      cursor: pointer; 
+      transition: all 0.3s ease; 
+    }
+    #imageGrid img.expanded { 
+      max-height: none; 
+      width: 80vw; 
     }
     #pointDetails { display: none; }
   </style>
@@ -83,7 +89,7 @@
       return `<b>${title}</b><br>Subido por: ${user}`;
     }
 
-    // Mostrar detalles abajo
+    // Mostrar detalles abajo con imágenes clicables
     function showDetails(title, user, description, imageUrls) {
       document.getElementById('pointDetails').style.display = 'block';
       document.getElementById('detailTitle').textContent = title;
@@ -94,6 +100,7 @@
       imageUrls.forEach(url => {
         const img = document.createElement('img');
         img.src = url;
+        img.onclick = () => img.classList.toggle('expanded');
         imageGrid.appendChild(img);
       });
     }
@@ -226,9 +233,21 @@
         const result = await response.json();
         console.log('Respuesta:', result);
         prompt(result.message, JSON.stringify(result.geojson, null, 2));
+
+        // Agregar el nuevo punto al mapa permanentemente
+        const newLayer = L.marker([latitude, longitude]);
+        const popupContent = createPopupContent(title, user);
+        newLayer.bindPopup(popupContent, { className: 'custom-popup' });
+        newLayer.on('click', () => {
+          showDetails(title, user, description, imageUrls);
+        });
+        newLayer.addTo(map);
+
+        // Mostrar detalles y volver a modo visor
         document.getElementById('pointForm').style.display = 'none';
         document.getElementById('pointDetails').style.display = 'block';
         showDetails(title, user, description, imageUrls);
+        newLayer.openPopup(); // Abrir popup del nuevo punto
         disableMapClick();
       } catch (error) {
         console.error('Error:', error);
