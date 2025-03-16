@@ -70,7 +70,7 @@
       if (imageUrls.length > 0) {
         popupContent += '<br>';
         imageUrls.forEach(url => {
-          popupContent += `<a href="${url}" target="_blank"><img src="${url}" onload="this.parentNode.parentNode.parentNode._popup._update()">`;
+          popupContent += `<a href="${url}" target="_blank"><img src="${url}">`;
         });
       }
       return popupContent;
