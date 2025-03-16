@@ -13,8 +13,9 @@
     button:hover { background-color: #555; }
     /* Popup violeta y grande */
     .leaflet-popup.custom-popup .leaflet-popup-content-wrapper { 
-      width: 320px !important; 
-      background-color: #800080 !important; /* Violeta */
+      min-width: 320px !important; 
+      max-width: 320px !important; 
+      background-color: #800080 !important; 
       color: white !important; 
       border-radius: 5px;
     }
@@ -22,11 +23,13 @@
       max-height: 400px; 
       overflow-y: auto; 
       padding: 10px; 
+      margin: 0; 
     }
     .leaflet-popup.custom-popup img { 
       display: block; 
-      margin-top: 5px; 
+      margin: 5px 0; 
       width: 100px; 
+      cursor: pointer; 
     }
   </style>
 </head>
@@ -60,6 +63,18 @@
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
+    // Función para crear popup con imágenes dinámicas
+    function createPopupContent(title, user, description, imageUrls) {
+      let popupContent = `<b>${title}</b><br>Subido por: ${user}<br>${description.replace(/{{https:\/\/i\.imgur\.com\/[^}]+}}/g, '')}`;
+      if (imageUrls.length > 0) {
+        popupContent += '<br>';
+        imageUrls.forEach(url => {
+          popupContent += `<a href="${url}" target="_blank"><img src="${url}" width="100" onload="this.parentNode.parentNode.parentNode._popup._update()">`;
+        });
+      }
+      return popupContent;
+    }
+
     // Cargar puntos desde GitHub
     fetch('https://raw.githubusercontent.com/DiegoFFranco/fisuMapBaires/main/points.geojson')
       .then(response => response.json())
@@ -74,14 +89,8 @@
             if (imageMatch && !imageUrls.length) {
               imageUrls = imageMatch.map(url => url.slice(2, -2));
             }
-            let popupContent = `<b>${title}</b><br>Subido por: ${user}<br>${description.replace(/{{https:\/\/i\.imgur\.com\/[^}]+}}/g, '')}`;
-            if (imageUrls.length > 0) {
-              popupContent += '<br>';
-              imageUrls.forEach(url => {
-                popupContent += `<img src="${url}" alt="Imagen">`;
-              });
-            }
-            layer.bindPopup(popupContent, { className: 'custom-popup', maxWidth: 320 });
+            const popupContent = createPopupContent(title, user, description, imageUrls);
+            layer.bindPopup(popupContent, { className: 'custom-popup', maxWidth: 320, minWidth: 320, autoPan: false });
           }
         }).addTo(map);
       })
@@ -178,14 +187,8 @@
           map.removeLayer(currentMarker);
           currentMarker = null;
         }
-        let popupContent = `<b>${title}</b><br>Subido por: ${user}<br>${description}`;
-        if (imageUrls.length > 0) {
-          popupContent += '<br>';
-          imageUrls.forEach(url => {
-            popupContent += `<img src="${url}" alt="Imagen">`;
-          });
-        }
-        L.marker([latitude, longitude]).bindPopup(popupContent, { className: 'custom-popup', maxWidth: 320 }).addTo(map);
+        const popupContent = createPopupContent(title, user, description, imageUrls);
+        L.marker([latitude, longitude]).bindPopup(popupContent, { className: 'custom-popup', maxWidth: 320, minWidth: 320, autoPan: false }).addTo(map);
       } catch (error) {
         console.error('Error:', error);
         alert('Error al enviar. Revisá la consola.');
