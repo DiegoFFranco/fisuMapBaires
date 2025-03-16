@@ -11,7 +11,6 @@
     #formContainer, #pointDetails { margin: 20px; }
     input, select, button { background-color: #333; color: white; border: 1px solid white; padding: 5px; }
     button:hover { background-color: #555; }
-    /* Popup pequeño */
     .leaflet-popup.custom-popup .leaflet-popup-content-wrapper { 
       background-color: #800080 !important; 
       color: white !important; 
@@ -22,7 +21,6 @@
       margin: 0; 
       text-align: center;
     }
-    /* Barra deslizadora abajo */
     #imageGrid { 
       display: flex; 
       overflow-x: auto; 
@@ -45,7 +43,7 @@
   </style>
 </head>
 <body>
-  <h1>fisuMapBaires - Modo Visor</h1>
+  <h1 id="modeTitle">fisuMapBaires - Modo Visor</h1>
   <div id="mapContainer"></div>
   <div id="formContainer">
     <button id="addPointBtn" onclick="showForm()">Agregar Punto</button>
@@ -65,6 +63,7 @@
       <label>Fotos (opcional, podés subir varias):</label>
       <input type="file" id="photoInput" accept="image/*" capture="environment" multiple><br>
       <button onclick="submitPoint()">Enviar Punto</button>
+      <button onclick="cancelForm()">Cancelar</button>
     </div>
   </div>
   <div id="pointDetails">
@@ -79,6 +78,7 @@
   <script>
     let latitude, longitude;
     let currentMarker = null;
+    let isEditing = false;
     const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -91,6 +91,7 @@
 
     // Mostrar detalles abajo con imágenes clicables
     function showDetails(title, user, description, imageUrls) {
+      if (isEditing) return; // No mostrar detalles en modo edición
       document.getElementById('pointDetails').style.display = 'block';
       document.getElementById('detailTitle').textContent = title;
       document.getElementById('detailUser').textContent = `Subido por: ${user}`;
@@ -105,29 +106,44 @@
       });
     }
 
-    // Cargar puntos desde GitHub
-    fetch('https://raw.githubusercontent.com/DiegoFFranco/fisuMapBaires/main/points.geojson')
-      .then(response => response.json())
-      .then(data => {
-        L.geoJSON(data, {
-          onEachFeature: (feature, layer) => {
-            const title = feature.properties.title || 'Sin título';
-            const description = feature.properties.description || 'Sin descripción';
-            const user = feature.properties.user || 'Anónimo';
-            let imageUrls = feature.properties.imageUrls || [];
-            const imageMatch = description.match(/{{https:\/\/i\.imgur\.com\/[^}]+}}/g);
-            if (imageMatch && !imageUrls.length) {
-              imageUrls = imageMatch.map(url => url.slice(2, -2));
+    // Cargar puntos desde GitHub y localStorage
+    function loadPoints() {
+      fetch('https://raw.githubusercontent.com/DiegoFFranco/fisuMapBaires/main/points.geojson')
+        .then(response => response.json())
+        .then(data => {
+          L.geoJSON(data, {
+            onEachFeature: (feature, layer) => {
+              const title = feature.properties.title || 'Sin título';
+              const description = feature.properties.description || 'Sin descripción';
+              const user = feature.properties.user || 'Anónimo';
+              let imageUrls = feature.properties.imageUrls || [];
+              const imageMatch = description.match(/{{https:\/\/i\.imgur\.com\/[^}]+}}/g);
+              if (imageMatch && !imageUrls.length) {
+                imageUrls = imageMatch.map(url => url.slice(2, -2));
+              }
+              const popupContent = createPopupContent(title, user);
+              layer.bindPopup(popupContent, { className: 'custom-popup' });
+              layer.on('click', () => {
+                showDetails(title, user, description.replace(/{{https:\/\/i\.imgur\.com\/[^}]+}}/g, ''), imageUrls);
+              });
+              layer.addTo(map);
             }
-            const popupContent = createPopupContent(title, user);
-            layer.bindPopup(popupContent, { className: 'custom-popup' });
-            layer.on('click', () => {
-              showDetails(title, user, description.replace(/{{https:\/\/i\.imgur\.com\/[^}]+}}/g, ''), imageUrls);
-            });
-          }
-        }).addTo(map);
-      })
-      .catch(error => console.log('No hay puntos previos:', error));
+          });
+        })
+        .catch(error => console.log('No hay puntos previos:', error));
+
+      // Cargar puntos desde localStorage
+      const localPoints = JSON.parse(localStorage.getItem('fisuPoints') || '[]');
+      localPoints.forEach(point => {
+        const layer = L.marker([point.latitude, point.longitude]);
+        const popupContent = createPopupContent(point.title, point.user);
+        layer.bindPopup(popupContent, { className: 'custom-popup' });
+        layer.on('click', () => {
+          showDetails(point.title, point.user, point.description, point.imageUrls);
+        });
+        layer.addTo(map);
+      });
+    }
 
     // Clic en el mapa solo en modo edición
     function enableMapClick() {
@@ -170,10 +186,21 @@
     });
 
     function showForm() {
+      isEditing = true;
+      document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Edición';
       document.getElementById('pointForm').style.display = 'block';
       document.getElementById('addPointBtn').style.display = 'none';
       document.getElementById('pointDetails').style.display = 'none';
       enableMapClick();
+    }
+
+    function cancelForm() {
+      isEditing = false;
+      document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Visor';
+      document.getElementById('pointForm').style.display = 'none';
+      document.getElementById('addPointBtn').style.display = 'block';
+      document.getElementById('pointDetails').style.display = 'none';
+      disableMapClick();
     }
 
     async function submitPoint() {
@@ -234,7 +261,12 @@
         console.log('Respuesta:', result);
         prompt(result.message, JSON.stringify(result.geojson, null, 2));
 
-        // Agregar el nuevo punto al mapa permanentemente
+        // Guardar en localStorage
+        const localPoints = JSON.parse(localStorage.getItem('fisuPoints') || '[]');
+        localPoints.push(pointData);
+        localStorage.setItem('fisuPoints', JSON.stringify(localPoints));
+
+        // Agregar el nuevo punto al mapa
         const newLayer = L.marker([latitude, longitude]);
         const popupContent = createPopupContent(title, user);
         newLayer.bindPopup(popupContent, { className: 'custom-popup' });
@@ -244,10 +276,12 @@
         newLayer.addTo(map);
 
         // Mostrar detalles y volver a modo visor
+        isEditing = false;
+        document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Visor';
         document.getElementById('pointForm').style.display = 'none';
         document.getElementById('pointDetails').style.display = 'block';
         showDetails(title, user, description, imageUrls);
-        newLayer.openPopup(); // Abrir popup del nuevo punto
+        newLayer.openPopup();
         disableMapClick();
       } catch (error) {
         console.error('Error:', error);
@@ -256,6 +290,7 @@
     }
 
     // Iniciar en modo visor
+    loadPoints();
     disableMapClick();
   </script>
 </body>
