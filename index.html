@@ -33,15 +33,27 @@
       width: auto; 
       object-fit: contain; 
       cursor: pointer; 
-      transition: all 0.3s ease; 
-    }
-    #imageGrid img.expanded { 
-      max-height: none; 
-      width: 80vw; 
     }
     #pointDetails { display: none; }
     h1 { margin: 20px; display: inline-block; }
     #addPointBtn { float: right; margin: 20px; }
+    #imageOverlay { 
+      display: none; 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh; 
+      background-color: rgba(0, 0, 0, 0.8); 
+      z-index: 1000; 
+      justify-content: center; 
+      align-items: center; 
+    }
+    #imageOverlay img { 
+      max-width: 100%; 
+      max-height: 100%; 
+      object-fit: contain; 
+    }
   </style>
 </head>
 <body>
@@ -64,7 +76,7 @@
       <input type="text" id="descriptionInput" placeholder="Detalles del punto"><br>
       <label>Fotos (opcional, podés subir varias):</label>
       <input type="file" id="photoInput" accept="image/*" capture="environment" multiple><br>
-      <button onclick="submitPoint()">Enviar Punto</button>
+      <button id="submitBtn" onclick="submitPoint()">Enviar Punto</button>
     </div>
   </div>
   <div id="pointDetails">
@@ -73,6 +85,7 @@
     <p id="detailDescription"></p>
     <div id="imageGrid"></div>
   </div>
+  <div id="imageOverlay" onclick="hideOverlay()"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
@@ -84,12 +97,10 @@
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
-    // Función para crear popup pequeño
     function createPopupContent(title, user) {
       return `<b>${title}</b><br>Subido por: ${user}`;
     }
 
-    // Mostrar detalles abajo con imágenes clicables
     function showDetails(title, user, description, imageUrls) {
       if (isEditing) return;
       document.getElementById('pointDetails').style.display = 'block';
@@ -101,19 +112,29 @@
       imageUrls.forEach(url => {
         const img = document.createElement('img');
         img.src = url;
-        img.onclick = () => img.classList.toggle('expanded');
+        img.onclick = () => showOverlay(url);
         imageGrid.appendChild(img);
       });
     }
 
-    // Ocultar detalles si se hace clic fuera de un punto
+    function showOverlay(url) {
+      const overlay = document.getElementById('imageOverlay');
+      overlay.innerHTML = `<img src="${url}">`;
+      overlay.style.display = 'flex';
+    }
+
+    function hideOverlay() {
+      const overlay = document.getElementById('imageOverlay');
+      overlay.style.display = 'none';
+      overlay.innerHTML = '';
+    }
+
     function hideDetails() {
       if (!isEditing) {
         document.getElementById('pointDetails').style.display = 'none';
       }
     }
 
-    // Cargar puntos desde GitHub y localStorage
     function loadPoints() {
       fetch('https://raw.githubusercontent.com/DiegoFFranco/fisuMapBaires/main/points.geojson')
         .then(response => response.json())
@@ -132,7 +153,7 @@
               layer.bindPopup(popupContent, { className: 'custom-popup' });
               layer.on('click', (e) => {
                 showDetails(title, user, description.replace(/{{https:\/\/i\.imgur\.com\/[^}]+}}/g, ''), imageUrls);
-                L.DomEvent.stopPropagation(e); // Evitar que el clic en el punto dispare hideDetails
+                L.DomEvent.stopPropagation(e);
               });
               layer.addTo(map);
             }
@@ -153,7 +174,6 @@
       });
     }
 
-    // Clic en el mapa solo en modo edición o para ocultar detalles
     function enableMapClick() {
       map.on('click', (event) => {
         if (isEditing) {
@@ -177,7 +197,6 @@
       }
     }
 
-    // Buscar dirección con Nominatim
     document.getElementById('searchInput').addEventListener('keypress', async (event) => {
       if (event.key === 'Enter') {
         const query = document.getElementById('searchInput').value;
@@ -205,7 +224,7 @@
         document.getElementById('addPointBtn').textContent = 'Agregar Punto';
         document.getElementById('pointDetails').style.display = 'none';
         disableMapClick();
-        enableMapClick(); // Reactivar para ocultar detalles
+        enableMapClick();
       } else {
         isEditing = true;
         document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Edición';
@@ -217,6 +236,9 @@
     }
 
     async function submitPoint() {
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+
       const layer = document.getElementById('layerSelect').value;
       const user = document.getElementById('userInput').value || 'Anónimo';
       const title = document.getElementById('titleInput').value;
@@ -225,11 +247,13 @@
 
       if (!latitude || !longitude) {
         alert('Hacé clic en el mapa o buscá una dirección.');
+        submitBtn.disabled = false;
         return;
       }
 
       if (!title) {
         alert('Ingresá un título para el punto.');
+        submitBtn.disabled = false;
         return;
       }
 
@@ -274,12 +298,10 @@
         console.log('Respuesta:', result);
         prompt(result.message, JSON.stringify(result.geojson, null, 2));
 
-        // Guardar en localStorage
         const localPoints = JSON.parse(localStorage.getItem('fisuPoints') || '[]');
         localPoints.push(pointData);
         localStorage.setItem('fisuPoints', JSON.stringify(localPoints));
 
-        // Agregar el nuevo punto al mapa
         const newLayer = L.marker([latitude, longitude]);
         const popupContent = createPopupContent(title, user);
         newLayer.bindPopup(popupContent, { className: 'custom-popup' });
@@ -289,7 +311,6 @@
         });
         newLayer.addTo(map);
 
-        // Volver a modo visor
         isEditing = false;
         document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Visor';
         document.getElementById('pointForm').style.display = 'none';
@@ -298,16 +319,16 @@
         showDetails(title, user, description, imageUrls);
         newLayer.openPopup();
         disableMapClick();
-        enableMapClick(); // Reactivar para ocultar detalles
+        enableMapClick();
       } catch (error) {
         console.error('Error:', error);
         alert('Error al enviar. Revisá la consola.');
       }
+      submitBtn.disabled = false;
     }
 
-    // Iniciar en modo visor
     loadPoints();
-    enableMapClick(); // Habilitar para ocultar detalles al inicio
+    enableMapClick();
   </script>
 </body>
 </html>
