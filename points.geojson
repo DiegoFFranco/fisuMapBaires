@@ -5,13 +5,17 @@
         "type": "Feature",
         "geometry": {
           "type": "Point",
-          "coordinates": [-58.427867889404304, -34.60299380780607]
+          "coordinates": [-58.4000587463379, -34.59536349334877]
         },
         "properties": {
-          "layer": "Anon",
-          "user": "Dieguin",
-          "title": "Inimputable",
-          "description": "Prueba Negra {{https://i.imgur.com/IXfnR0X.jpeg}}"
+          "layer": "anon",
+          "user": "diegote",
+          "title": "Punto 5",
+          "description": "Prueba sin undefined",
+          "imageUrls": [
+            "https://i.imgur.com/VTp9aku.jpeg",
+            "https://i.imgur.com/Cn7CLUL.jpeg"
+          ]
         }
       }
     ]
