@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>fisuMapBaires</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <style>
     body { margin: 0; font-family: Arial, sans-serif; background-color: #1a1a1a; color: #fff; }
     #mapContainer { height: 80vh; width: 100%; }
@@ -16,8 +18,8 @@
     #photoContainer img { height: 100px; margin: 0 5px; cursor: pointer; }
     #imageOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
     #imageOverlay img { max-width: 90%; max-height: 90%; border: 5px solid; }
-    #layerControls { position: absolute; top: 50px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; text-align: center; }
-    #layerControls h3 { margin: 0 0 10px; }
+    #layerControls { position: absolute; top: 50px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
+    #layerControls h3 { text-align: center; margin: 0 0 10px; }
     #layerControls label { display: block; padding: 5px; margin: 2px 0; font-weight: bold; }
     .custom-popup { max-width: 250px; background: #333; color: #fff; }
     input, select, textarea, button { background: #444; color: #fff; border: 1px solid #666; }
@@ -69,6 +71,7 @@
   <div id="savingMessage">Guardando punto, por favor esperá...</div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script>
     let latitude, longitude;
     let currentMarker = null;
@@ -101,7 +104,18 @@
       'comisarias': { color: 'blue', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/33d1ed2480106a5f6e044720607b01cc/raw/comisarias.geojson', tempUrl: null }
     };
 
-    const layerGroups = {};
+    const clusterGroups = {};
+    Object.keys(layersConfig).forEach(layer => {
+      clusterGroups[layer] = L.markerClusterGroup({
+        iconCreateFunction: cluster => {
+          return L.divIcon({
+            html: `<span style="background-color: ${layersConfig[layer].color}; font-size: 16px; padding: 5px; color: white;">${cluster.getChildCount()}</span>`,
+            className: 'marker-cluster',
+            iconSize: L.point(40, 40)
+          });
+        }
+      });
+    });
 
     function createPopupContent(title, user) {
       return `<b>${title}</b><br>Usuario: ${user}`;
@@ -137,8 +151,8 @@
 
     async function loadPoints() {
       for (const layer in layersConfig) {
-        layerGroups[layer] = L.layerGroup();
         const config = layersConfig[layer];
+        clusterGroups[layer].clearLayers();
 
         try {
           const fixedResponse = await fetch(config.fixedUrl);
@@ -156,7 +170,7 @@
                 L.DomEvent.stopPropagation(e);
               });
             }
-          }).addTo(layerGroups[layer]);
+          }).addTo(clusterGroups[layer]);
         } catch (e) { console.log(`No hay datos fijos para ${layer}`); }
 
         if (config.tempUrl) {
@@ -176,12 +190,12 @@
                   L.DomEvent.stopPropagation(e);
                 });
               }
-            }).addTo(layerGroups[layer]);
+            }).addTo(clusterGroups[layer]);
           } catch (e) { console.log(`No hay datos temporales para ${layer}`); }
         }
 
         if (document.getElementById(`${layer}Check`).checked) {
-          layerGroups[layer].addTo(map);
+          clusterGroups[layer].addTo(map);
         }
       }
     }
@@ -192,7 +206,8 @@
           latitude = event.latlng.lat;
           longitude = event.latlng.lng;
           if (currentMarker) map.removeLayer(currentMarker);
-          currentMarker = L.marker([latitude, longitude], { icon: icons[document.getElementById('layerSelect').value] }).addTo(map);
+          const selectedLayer = document.getElementById('layerSelect').value;
+          currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
         } else {
           hideDetails();
         }
@@ -204,6 +219,19 @@
       if (currentMarker) {
         map.removeLayer(currentMarker);
         currentMarker = null;
+      }
+    }
+
+    function updateEditorLayer() {
+      if (isEditing) {
+        const selectedLayer = document.getElementById('layerSelect').value;
+        Object.keys(clusterGroups).forEach(layer => {
+          if (layer === selectedLayer) {
+            clusterGroups[layer].addTo(map);
+          } else {
+            map.removeLayer(clusterGroups[layer]);
+          }
+        });
       }
     }
 
@@ -230,16 +258,11 @@
         document.getElementById('pointDetails').style.display = 'none';
         document.getElementById('layerControls').style.display = 'none';
         enableMapClick();
-        const selectedLayer = document.getElementById('layerSelect').value;
-        Object.keys(layerGroups).forEach(layer => {
-          if (layer === selectedLayer) {
-            layerGroups[layer].addTo(map);
-          } else {
-            map.removeLayer(layerGroups[layer]);
-          }
-        });
+        updateEditorLayer();
       }
     }
+
+    document.getElementById('layerSelect').addEventListener('change', updateEditorLayer);
 
     async function submitPoint() {
       const submitBtn = document.getElementById('submitBtn');
@@ -285,13 +308,19 @@
               headers: { Authorization: 'Client-ID 724f0aaea5b4c6b' },
               body: formData
             });
-            if (!response.ok) throw new Error('Error en Imgur');
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`Error en Imgur: ${response.status} - ${errorText}`);
+            }
             const data = await response.json();
-            if (data.success) imageUrls.push(data.data.link);
-            else throw new Error('Imgur no devolvió éxito');
+            if (data.success) {
+              imageUrls.push(data.data.link);
+            } else {
+              throw new Error('Imgur no devolvió éxito');
+            }
           } catch (e) {
             console.error('Error en Imgur:', e);
-            alert('Error subiendo una foto. Intentá de nuevo.');
+            alert(`Error subiendo una foto: ${e.message}. Intentá de nuevo.`);
             submitBtn.disabled = false;
             document.getElementById('savingMessage').style.display = 'none';
             return;
@@ -329,7 +358,7 @@
           showDetails(imageUrls, layer);
           L.DomEvent.stopPropagation(e);
         });
-        layerGroups[layer].addLayer(marker);
+        clusterGroups[layer].addLayer(marker);
 
         toggleMode();
         marker.openPopup();
@@ -342,31 +371,31 @@
     }
 
     function updateLayers() {
-      Object.keys(layerGroups).forEach(layer => {
+      Object.keys(clusterGroups).forEach(layer => {
         const checkbox = document.getElementById(`${layer}Check`);
         if (checkbox.checked) {
-          if (!map.hasLayer(layerGroups[layer])) {
-            layerGroups[layer].addTo(map);
+          if (!map.hasLayer(clusterGroups[layer])) {
+            clusterGroups[layer].addTo(map);
           }
         } else {
-          map.removeLayer(layerGroups[layer]);
+          map.removeLayer(clusterGroups[layer]);
         }
       });
     }
 
     function selectAllLayers() {
-      Object.keys(layerGroups).forEach(layer => {
+      Object.keys(clusterGroups).forEach(layer => {
         const checkbox = document.getElementById(`${layer}Check`);
         checkbox.checked = true;
-        layerGroups[layer].addTo(map);
+        clusterGroups[layer].addTo(map);
       });
     }
 
     function deselectAllLayers() {
-      Object.keys(layerGroups).forEach(layer => {
+      Object.keys(clusterGroups).forEach(layer => {
         const checkbox = document.getElementById(`${layer}Check`);
         checkbox.checked = false;
-        map.removeLayer(layerGroups[layer]);
+        map.removeLayer(clusterGroups[layer]);
       });
       hideDetails();
     }
