@@ -1,6 +1,6 @@
-import fetch from 'node-fetch';
+const fetch = require('node-fetch');
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   try {
     const { layer, point } = JSON.parse(event.body);
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
