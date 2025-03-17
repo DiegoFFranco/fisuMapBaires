@@ -1,10 +1,10 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   const { layer, point } = JSON.parse(event.body);
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
   const gistId = {
-    'fisuras': 'ca1084559d9fc6c5a91a6175d424bd2c',
+    'fisuras': 'ca1084559d490fc6c5a91a6175d424bd2c',
     'limpieza': '52640ef61feae0ba47fa5c1b50a4bb03',
     'trapitos': '4b5ae0b59d4cbbad161f0234906cb1cd',
     'narcomenudeo': '363f43d4842fa35a3357ae2c474a6fff',
