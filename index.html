@@ -150,12 +150,13 @@
     }
 
     async function loadPoints() {
+      const timestamp = Date.now(); // Para evitar caché
       for (const layer in layersConfig) {
         const config = layersConfig[layer];
         clusterGroups[layer].clearLayers();
 
         try {
-          const fixedResponse = await fetch(config.fixedUrl);
+          const fixedResponse = await fetch(`${config.fixedUrl}?t=${timestamp}`);
           const fixedData = await fixedResponse.json();
           L.geoJSON(fixedData, {
             pointToLayer: (feature, latlng) => {
@@ -175,7 +176,7 @@
 
         if (config.tempUrl) {
           try {
-            const tempResponse = await fetch(config.tempUrl);
+            const tempResponse = await fetch(`${config.tempUrl}?t=${timestamp}`);
             const tempData = await tempResponse.json();
             L.geoJSON(tempData, {
               pointToLayer: (feature, latlng) => {
@@ -350,8 +351,8 @@
         });
         if (!response.ok) throw new Error('Error al guardar en Gist');
         const result = await response.json();
-        alert('Punto enviado con éxito');
 
+        // Agregar punto localmente antes de recargar
         const marker = L.marker([latitude, longitude], { icon: icons[layer] });
         marker.bindPopup(createPopupContent(title, user), { className: 'custom-popup' });
         marker.on('click', (e) => {
@@ -359,7 +360,11 @@
           L.DomEvent.stopPropagation(e);
         });
         clusterGroups[layer].addLayer(marker);
+        if (!map.hasLayer(clusterGroups[layer])) {
+          clusterGroups[layer].addTo(map);
+        }
 
+        alert('Punto enviado con éxito');
         toggleMode();
         marker.openPopup();
       } catch (error) {
