@@ -12,12 +12,18 @@
     #mapContainer { height: 80vh; width: 100%; }
     #modeTitle { text-align: center; margin: 10px 0; }
     #addPointBtn { position: absolute; top: 10px; right: 10px; z-index: 1000; padding: 5px 10px; background: #333; color: #fff; border: none; }
-    #pointForm { display: none; position: absolute; top: 50px; left: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
+    #pointForm { display: none; position: absolute; top: 50px; left: 10px; z-index: 1000; background: #333; padding: 15px; border: 1px solid #555; color: #fff; width: 300px; height: 400px; overflow-y: auto; }
+    #pointForm label { display: block; margin: 5px 0; }
+    #pointForm input, #pointForm select, #pointForm textarea { width: 100%; margin-bottom: 10px; }
+    #pointForm textarea { height: 80px; }
     #pointDetails { display: none; position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
     #photoContainer { display: flex; flex-wrap: nowrap; justify-content: flex-start; width: 100%; overflow-x: auto; padding: 5px 0; }
     #photoContainer img { height: 100px; margin: 0 5px; cursor: pointer; }
     #imageOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
     #imageOverlay img { max-width: 90%; max-height: 90%; border: 5px solid; }
+    #imageOverlay .nav-arrow { position: absolute; top: 50%; font-size: 40px; color: #fff; cursor: pointer; }
+    #imageOverlay .prev { left: 10px; }
+    #imageOverlay .next { right: 10px; }
     #layerControls { position: absolute; top: 50px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
     #layerControls h3 { text-align: center; margin: 0 0 10px; }
     #layerControls label { display: block; padding: 5px; margin: 2px 0; font-weight: bold; }
@@ -40,21 +46,25 @@
       <option value="casas-tomadas">Casas Tomadas</option>
       <option value="comercios-fisuras">Comercios Fisuras</option>
       <option value="via-publica">Vía Pública</option>
-    </select><br>
+    </select>
+    <label for="addressInput">Dirección:</label>
+    <input type="text" id="addressInput" placeholder="Ingresá una dirección">
+    <button onclick="geocodeAddress()">Buscar</button>
+    <button onclick="getCurrentLocation()">Ubicación Actual</button>
     <label for="userInput">Usuario:</label>
-    <input type="text" id="userInput" placeholder="Anónimo"><br>
+    <input type="text" id="userInput" placeholder="Anónimo">
     <label for="titleInput">Título:</label>
-    <input type="text" id="titleInput"><br>
+    <input type="text" id="titleInput">
     <label for="descriptionInput">Descripción:</label>
-    <textarea id="descriptionInput"></textarea><br>
-    <label for="photoInput">Fotos (máx. 5):</label>
-    <input type="file" id="photoInput" accept="image/*" multiple><br>
+    <textarea id="descriptionInput"></textarea>
+    <label for="photoInput">Fotos (máx. 5, JPG/PNG):</label>
+    <input type="file" id="photoInput" accept="image/jpeg,image/png" multiple>
     <button id="submitBtn" onclick="submitPoint()">Enviar Punto</button>
   </div>
   <div id="pointDetails">
     <div id="photoContainer"></div>
   </div>
-  <div id="imageOverlay" onclick="hideOverlay()"></div>
+  <div id="imageOverlay" onclick="hideOverlay(event)"></div>
   <div id="layerControls">
     <h3>Capas</h3>
     <label style="background-color: red"><input type="checkbox" id="fisurasCheck" checked onchange="updateLayers()"> Fisuras</label>
@@ -76,6 +86,8 @@
     let latitude, longitude;
     let currentMarker = null;
     let isEditing = false;
+    let currentImages = [];
+    let currentImageIndex = -1;
     const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -126,23 +138,43 @@
         document.getElementById('pointDetails').style.display = 'block';
         const photoContainer = document.getElementById('photoContainer');
         photoContainer.innerHTML = '';
-        imageUrls.forEach(url => {
+        imageUrls.forEach((url, index) => {
           const img = document.createElement('img');
           img.src = url;
-          img.onclick = () => showOverlay(url, layer);
+          img.onclick = () => showOverlay(url, layer, imageUrls, index);
           photoContainer.appendChild(img);
         });
       }
     }
 
-    function hideOverlay() {
-      document.getElementById('imageOverlay').style.display = 'none';
+    function hideOverlay(event) {
+      if (event.target.id === 'imageOverlay') {
+        document.getElementById('imageOverlay').style.display = 'none';
+      }
     }
 
-    function showOverlay(url, layer) {
+    function showOverlay(url, layer, imageUrls, index) {
+      currentImages = imageUrls;
+      currentImageIndex = index;
       const overlay = document.getElementById('imageOverlay');
-      overlay.innerHTML = `<img src="${url}" style="border-color: ${layersConfig[layer].color}">`;
+      overlay.innerHTML = `
+        <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}')">◄</span>
+        <img src="${url}" style="border-color: ${layersConfig[layer].color}">
+        <span class="nav-arrow next" onclick="navigateImages(1, '${layer}')">►</span>
+      `;
       overlay.style.display = 'flex';
+    }
+
+    function navigateImages(direction, layer) {
+      currentImageIndex += direction;
+      if (currentImageIndex < 0) currentImageIndex = currentImages.length - 1;
+      if (currentImageIndex >= currentImages.length) currentImageIndex = 0;
+      const overlay = document.getElementById('imageOverlay');
+      overlay.innerHTML = `
+        <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}')">◄</span>
+        <img src="${currentImages[currentImageIndex]}" style="border-color: ${layersConfig[layer].color}">
+        <span class="nav-arrow next" onclick="navigateImages(1, '${layer}')">►</span>
+      `;
     }
 
     function hideDetails() {
@@ -150,7 +182,7 @@
     }
 
     async function loadPoints() {
-      const timestamp = Date.now(); // Para evitar caché
+      const timestamp = Date.now(); // Solo para recarga inicial
       for (const layer in layersConfig) {
         const config = layersConfig[layer];
         clusterGroups[layer].clearLayers();
@@ -223,6 +255,52 @@
       }
     }
 
+    async function geocodeAddress() {
+      const address = document.getElementById('addressInput').value;
+      if (!address) {
+        alert('Ingresá una dirección para buscar.');
+        return;
+      }
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`);
+        const data = await response.json();
+        if (data.length > 0) {
+          latitude = parseFloat(data[0].lat);
+          longitude = parseFloat(data[0].lon);
+          if (currentMarker) map.removeLayer(currentMarker);
+          const selectedLayer = document.getElementById('layerSelect').value;
+          currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
+          map.setView([latitude, longitude], 15);
+        } else {
+          alert('No se encontró la dirección.');
+        }
+      } catch (e) {
+        console.error('Error en geolocalización:', e);
+        alert('Error buscando la dirección.');
+      }
+    }
+
+    function getCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            latitude = position.coords.latitude;
+            longitude = position.coords.longitude;
+            if (currentMarker) map.removeLayer(currentMarker);
+            const selectedLayer = document.getElementById('layerSelect').value;
+            currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
+            map.setView([latitude, longitude], 15);
+          },
+          (error) => {
+            console.error('Error en ubicación actual:', error);
+            alert('No se pudo obtener tu ubicación. Asegurate de permitir el acceso.');
+          }
+        );
+      } else {
+        alert('Tu navegador no soporta geolocalización.');
+      }
+    }
+
     function updateEditorLayer() {
       if (isEditing) {
         const selectedLayer = document.getElementById('layerSelect').value;
@@ -246,6 +324,7 @@
         document.getElementById('layerControls').style.display = 'block';
         disableMapClick();
         enableMapClick();
+        document.getElementById('addressInput').value = '';
         document.getElementById('userInput').value = '';
         document.getElementById('titleInput').value = '';
         document.getElementById('descriptionInput').value = '';
@@ -278,7 +357,7 @@
       const files = photoInput.files;
 
       if (!latitude || !longitude) {
-        alert('Hacé clic en el mapa para elegir una ubicación antes de enviar.');
+        alert('Hacé clic en el mapa, buscá una dirección o usá tu ubicación actual.');
         submitBtn.disabled = false;
         document.getElementById('savingMessage').style.display = 'none';
         return;
@@ -301,6 +380,13 @@
       let imageUrls = [];
       if (files.length > 0) {
         for (const file of files) {
+          const validTypes = ['image/jpeg', 'image/png'];
+          if (!validTypes.includes(file.type)) {
+            alert(`Formato no soportado: ${file.name}. Usá JPG o PNG.`);
+            submitBtn.disabled = false;
+            document.getElementById('savingMessage').style.display = 'none';
+            return;
+          }
           const formData = new FormData();
           formData.append('image', file);
           try {
@@ -321,7 +407,7 @@
             }
           } catch (e) {
             console.error('Error en Imgur:', e);
-            alert(`Error subiendo una foto: ${e.message}. Intentá de nuevo.`);
+            alert(`Error subiendo una foto: ${e.message}. Revisá los formatos e intentá de nuevo.`);
             submitBtn.disabled = false;
             document.getElementById('savingMessage').style.display = 'none';
             return;
@@ -352,7 +438,6 @@
         if (!response.ok) throw new Error('Error al guardar en Gist');
         const result = await response.json();
 
-        // Agregar punto localmente antes de recargar
         const marker = L.marker([latitude, longitude], { icon: icons[layer] });
         marker.bindPopup(createPopupContent(title, user), { className: 'custom-popup' });
         marker.on('click', (e) => {
