@@ -8,17 +8,19 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; }
+    body { margin: 0; font-family: Arial, sans-serif; background-color: #1a1a1a; color: #fff; }
     #mapContainer { height: 80vh; width: 100%; }
     #modeTitle { text-align: center; margin: 10px 0; }
-    #addPointBtn { position: absolute; top: 10px; right: 10px; z-index: 1000; padding: 5px 10px; }
-    #pointForm { display: none; position: absolute; top: 50px; left: 10px; z-index: 1000; background: white; padding: 10px; border: 1px solid #ccc; }
-    #pointDetails { display: none; position: absolute; bottom: 10px; left: 10px; z-index: 1000; background: white; padding: 10px; border: 1px solid #ccc; max-width: 300px; }
-    #photoContainer img { width: 200px; margin: 5px; cursor: pointer; }
+    #addPointBtn { position: absolute; top: 10px; right: 10px; z-index: 1000; padding: 5px 10px; background: #333; color: #fff; border: none; }
+    #pointForm { display: none; position: absolute; top: 50px; left: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
+    #pointDetails { display: none; position: absolute; bottom: 10px; left: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; max-width: 300px; color: #fff; }
+    #photoContainer { display: flex; overflow-x: auto; white-space: nowrap; padding: 5px 0; }
+    #photoContainer img { height: 100px; margin: 0 5px; cursor: pointer; }
     #imageOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
-    #imageOverlay img { max-width: 90%; max-height: 90%; }
-    #layerControls { position: absolute; top: 50px; right: 10px; z-index: 1000; background: white; padding: 10px; border: 1px solid #ccc; }
-    .custom-popup { max-width: 250px; }
+    #imageOverlay img { max-width: 90%; max-height: 90%; border: 5px solid; }
+    #layerControls { position: absolute; top: 50px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
+    .custom-popup { max-width: 250px; background: #333; color: #fff; }
+    input, select, textarea, button { background: #444; color: #fff; border: 1px solid #666; }
   </style>
 </head>
 <body>
@@ -47,9 +49,6 @@
     <button id="submitBtn" onclick="submitPoint()">Enviar Punto</button>
   </div>
   <div id="pointDetails">
-    <h3 id="detailsTitle"></h3>
-    <p id="detailsUser"></p>
-    <p id="detailsDescription"></p>
     <div id="photoContainer"></div>
   </div>
   <div id="imageOverlay" onclick="hideOverlay()"></div>
@@ -77,6 +76,15 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
+
+    const dropIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
 
     const layersConfig = {
       'fisuras': { 
@@ -138,17 +146,16 @@
       return `<b>${title}</b><br>Usuario: ${user}`;
     }
 
-    function showDetails(title, user, description, imageUrls) {
+    let currentLayerColor = '#fff'; // Para el color del overlay
+
+    function showDetails(imageUrls, layer) {
       document.getElementById('pointDetails').style.display = 'block';
-      document.getElementById('detailsTitle').textContent = title;
-      document.getElementById('detailsUser').textContent = `Usuario: ${user}`;
-      document.getElementById('detailsDescription').textContent = description;
       const photoContainer = document.getElementById('photoContainer');
       photoContainer.innerHTML = '';
       imageUrls.forEach(url => {
         const img = document.createElement('img');
         img.src = url;
-        img.onclick = () => showOverlay(url);
+        img.onclick = () => showOverlay(url, layer);
         photoContainer.appendChild(img);
       });
     }
@@ -157,9 +164,9 @@
       document.getElementById('imageOverlay').style.display = 'none';
     }
 
-    function showOverlay(url) {
+    function showOverlay(url, layer) {
       const overlay = document.getElementById('imageOverlay');
-      overlay.innerHTML = `<img src="${url}">`;
+      overlay.innerHTML = `<img src="${url}" style="border-color: ${layersConfig[layer].color}">`;
       overlay.style.display = 'flex';
     }
 
@@ -177,14 +184,14 @@
           const fixedData = await fixedResponse.json();
           L.geoJSON(fixedData, {
             pointToLayer: (feature, latlng) => {
-              return L.circleMarker(latlng, { radius: 8, fillColor: config.color, color: config.color, weight: 1, opacity: 1, fillOpacity: 0.8 });
+              return L.marker(latlng, { icon: dropIcon });
             },
-            onEachFeature: (feature, layer) => {
+            onEachFeature: (feature, layerFeature) => {
               const { name, description, user } = feature.properties;
               const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
-              layer.bindPopup(createPopupContent(name, user), { className: 'custom-popup' });
-              layer.on('click', (e) => {
-                showDetails(name, user, description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, ''), imageUrls);
+              layerFeature.bindPopup(createPopupContent(name, user), { className: 'custom-popup' });
+              layerFeature.on('click', (e) => {
+                showDetails(imageUrls, layer);
                 L.DomEvent.stopPropagation(e);
               });
             }
@@ -197,14 +204,14 @@
             const tempData = await tempResponse.json();
             L.geoJSON(tempData, {
               pointToLayer: (feature, latlng) => {
-                return L.circleMarker(latlng, { radius: 8, fillColor: config.color, color: config.color, weight: 1, opacity: 1, fillOpacity: 0.8 });
+                return L.marker(latlng, { icon: dropIcon });
               },
-              onEachFeature: (feature, layer) => {
+              onEachFeature: (feature, layerFeature) => {
                 const { name, description, user } = feature.properties;
                 const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
-                layer.bindPopup(createPopupContent(name, user), { className: 'custom-popup' });
-                layer.on('click', (e) => {
-                  showDetails(name, user, description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, ''), imageUrls);
+                layerFeature.bindPopup(createPopupContent(name, user), { className: 'custom-popup' });
+                layerFeature.on('click', (e) => {
+                  showDetails(imageUrls, layer);
                   L.DomEvent.stopPropagation(e);
                 });
               }
@@ -271,7 +278,7 @@
       const photoInput = document.getElementById('photoInput');
 
       if (!latitude || !longitude) {
-        alert('Hacé clic en el mapa para elegir una ubicación.');
+        alert('Hacé clic en el mapa para elegir una ubicación antes de enviar.');
         submitBtn.disabled = false;
         return;
       }
@@ -321,23 +328,28 @@
         if (!response.ok) throw new Error('Error al guardar en Gist');
         alert('Punto enviado con éxito');
 
-        const marker = L.circleMarker([latitude, longitude], {
-          radius: 8,
-          fillColor: layersConfig[layer].color,
-          color: layersConfig[layer].color,
-          weight: 1,
-          opacity: 1,
-          fillOpacity: 0.8
-        });
+        const marker = L.marker([latitude, longitude], { icon: dropIcon });
         marker.bindPopup(createPopupContent(title, user), { className: 'custom-popup' });
         marker.on('click', (e) => {
-          showDetails(title, user, description, imageUrls);
+          showDetails(imageUrls, layer);
           L.DomEvent.stopPropagation(e);
         });
         clusterGroups[layer].addLayer(marker);
 
         toggleMode();
         marker.openPopup();
+
+        // Limpiar formulario
+        document.getElementById('userInput').value = '';
+        document.getElementById('titleInput').value = '';
+        document.getElementById('descriptionInput').value = '';
+        document.getElementById('photoInput').value = '';
+        if (currentMarker) {
+          map.removeLayer(currentMarker);
+          currentMarker = null;
+          latitude = null;
+          longitude = null;
+        }
       } catch (error) {
         console.error('Error:', error);
         alert('Error al enviar. Revisá la consola.');
@@ -372,6 +384,7 @@
         checkbox.checked = false;
         map.removeLayer(clusterGroups[layer]);
       });
+      hideDetails();
     }
 
     loadPoints();
