@@ -78,25 +78,49 @@
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
-    // Capas y colores
+    // Capas y colores con URLs de Gist reales
     const layersConfig = {
-      'fisuras': { color: 'red', fixedUrl: '', tempUrl: '' },
-      'limpieza': { color: 'green', fixedUrl: '', tempUrl: '' },
-      'trapitos': { color: 'yellow', fixedUrl: '', tempUrl: '' },
-      'narcomenudeo': { color: 'purple', fixedUrl: '', tempUrl: '' },
-      'casas-tomadas': { color: 'orange', fixedUrl: '', tempUrl: '' },
-      'comercios-fisuras': { color: 'pink', fixedUrl: '', tempUrl: '' },
-      'via-publica': { color: 'gray', fixedUrl: '', tempUrl: '' },
-      'comisarias': { color: 'blue', fixedUrl: '', tempUrl: null }
-    };
-
-    // URLs de Gist (reemplazá con las tuyas después de crearlos)
-    Object.keys(layersConfig).forEach(layer => {
-      layersConfig[layer].fixedUrl = `https://gist.githubusercontent.com/DiegoFFranco/${layer}-fija/raw/${layer}-fija.geojson`;
-      if (layersConfig[layer].tempUrl !== null) {
-        layersConfig[layer].tempUrl = `https://gist.githubusercontent.com/DiegoFFranco/${layer}-temporal/raw/${layer}-temporal.geojson`;
+      'fisuras': { 
+        color: 'red', 
+        fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/1cb1d8e5bf02d884ae4dd0cca5c7ca97/raw/f49f6c20e0ccdd08bd2871f995898c598e830f67/fisuras-fija.geojson', 
+        tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/ca1084559d9fc6c5a91a6175d424bd2c/raw/242a03220aa00562f44352a9c0be5261599cf127/fisuras-temporal.geojson' 
+      },
+      'limpieza': { 
+        color: 'green', 
+        fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/2c3d4d9e4a21d504b2c268debc71f8ec/raw/bae42a015ca4843013b77ac9a6295f8f4f2f6958/limpieza-fija.geojson', 
+        tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/52640ef61feae0ba47fa5c1b50a4bb03/raw/448cc1c4d327316cf770da40361fe2baf9c48205/limpieza-temporal.geojson' 
+      },
+      'trapitos': { 
+        color: 'yellow', 
+        fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/3a03f67f71c4a786a77e02272627ca05/raw/b100392c4a8bc36bbf6e8e6afb7684d05ab96c4a/trapitos-fija.geojson', 
+        tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/4b5ae0b59d4cbbad161f0234906cb1cd/raw/3472ab3f291b5d20238d58a9218450786e722bfe/trapitos-temporal.geojson' 
+      },
+      'narcomenudeo': { 
+        color: 'purple', 
+        fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/5efc8ea5b5a449f028a6a52fa198dbb5/raw/ed5018852c5627baca7c603601c08274368b9d1b/narcomenudeo-fija.geojson', 
+        tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/363f43d4842fa35a3357ae2c474a6fff/raw/d308e79bb7ff536b92c67063111625f6c6b38230/narcomenudeo-temporal.geojson' 
+      },
+      'casas-tomadas': { 
+        color: 'orange', 
+        fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/302f0ad335f67a6e636191a63d7eb14d/raw/d68c894f8039d8594b2df0123ae0a1536c7073b5/casasTomadas-fija.geojson', 
+        tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/9a74c688f462688e1d712989c275d853/raw/845fa838ada35e03044931aba508f35f227c5df3/casasTomadas-temporal.geojson' 
+      },
+      'comercios-fisuras': { 
+        color: 'pink', 
+        fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/b9007a080910fab28432b60de9478e6a/raw/3ca9baaad6675af987fe3946090ca9cfa849f419/comerciosFisura-fija.geojson', 
+        tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/3a1ca4ff9425fbac6d887aba7e414f98/raw/b1eaef49d7bd786d80d34b964ff544f4a66a1600/comerciosFisura-temporal.geojson' 
+      },
+      'via-publica': { 
+        color: 'gray', 
+        fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/daa897ed4fbfba087549e4abea37412c/raw/bf1e734ad457f8a44c25979801b7aef21c4a7d0c/viaPublica-fija.geojson', 
+        tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/79af8d490561594d4bd4f739ae5e9356/raw/785ca5ac955f9a008ac8ebac5da24149201cf6c8/viaPublica-temporal.geojson' 
+      },
+      'comisarias': { 
+        color: 'blue', 
+        fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/33d1ed2480106a5f6e044720607b01cc/raw/25d9d66d2ea2cba5bcfb7f17171dbab97c3be614/comisarias.geojson', 
+        tempUrl: null 
       }
-    });
+    };
 
     const clusterGroups = {};
     Object.keys(layersConfig).forEach(layer => {
@@ -149,7 +173,6 @@
         const config = layersConfig[layer];
         clusterGroups[layer].clearLayers();
 
-        // Cargar fija
         try {
           const fixedResponse = await fetch(config.fixedUrl);
           const fixedData = await fixedResponse.json();
@@ -169,7 +192,6 @@
           }).addTo(clusterGroups[layer]);
         } catch (e) { console.log(`No hay datos fijos para ${layer}`); }
 
-        // Cargar temporal (si existe)
         if (config.tempUrl) {
           try {
             const tempResponse = await fetch(config.tempUrl);
@@ -291,7 +313,6 @@
 
       console.log('Punto enviado:', pointData);
 
-      // Subir a Gist (usamos Netlify Function como proxy por ahora)
       try {
         const response = await fetch('/.netlify/functions/savePoint', {
           method: 'POST',
@@ -301,7 +322,6 @@
         if (!response.ok) throw new Error('Error al guardar en Gist');
         alert('Punto enviado con éxito');
 
-        // Agregar al mapa local
         const marker = L.circleMarker([latitude, longitude], {
           radius: 8,
           fillColor: layersConfig[layer].color,
@@ -317,7 +337,6 @@
         });
         clusterGroups[layer].addLayer(marker);
 
-        // Volver a modo visor
         toggleMode();
         marker.openPopup();
       } catch (error) {
