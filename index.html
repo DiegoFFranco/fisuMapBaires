@@ -1,497 +1,201 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>fisuMapBaires</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-  <style>
-    body { margin: 0; font-family: Arial, sans-serif; background-color: #1a1a1a; color: #fff; }
-    #mapContainer { height: 80vh; width: 100%; }
-    #modeTitle { text-align: center; margin: 10px 0; }
-    #addPointBtn { position: absolute; top: 10px; right: 10px; z-index: 1000; padding: 5px 10px; background: #333; color: #fff; border: none; }
-    #pointForm { display: none; position: absolute; top: 50px; left: 10px; z-index: 1000; background: #333; padding: 15px; border: 1px solid #555; color: #fff; width: 300px; height: 400px; overflow-y: auto; }
-    #pointForm label { display: block; margin: 5px 0; }
-    #pointForm input, #pointForm select, #pointForm textarea { width: 100%; margin-bottom: 10px; }
-    #pointForm textarea { height: 80px; }
-    #pointDetails { display: none; position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
-    #photoContainer { display: flex; flex-wrap: nowrap; justify-content: flex-start; width: 100%; overflow-x: auto; padding: 5px 0; }
-    #photoContainer img { height: 100px; margin: 0 5px; cursor: pointer; }
-    #imageOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
-    #imageOverlay img { max-width: 90%; max-height: 90%; border: 5px solid; }
-    #imageOverlay .nav-arrow { position: absolute; top: 50%; font-size: 40px; color: #fff; cursor: pointer; }
-    #imageOverlay .prev { left: 10px; }
-    #imageOverlay .next { right: 10px; }
-    #layerControls { position: absolute; top: 50px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
-    #layerControls h3 { text-align: center; margin: 0 0 10px; }
-    #layerControls label { display: block; padding: 5px; margin: 2px 0; font-weight: bold; }
-    .custom-popup { max-width: 250px; background: #333; color: #fff; }
-    input, select, textarea, button { background: #444; color: #fff; border: 1px solid #666; }
-    #savingMessage { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3000; background: #444; padding: 10px; border: 1px solid #666; }
-  </style>
-</head>
+<style>
+  /* ... (resto igual) */
+  #imageOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; cursor: pointer; }
+  /* ... (resto igual) */
+</style>
+
 <body>
-  <h2 id="modeTitle">fisuMapBaires - Modo Visor</h2>
-  <button id="addPointBtn" onclick="toggleMode()">Agregar Punto</button>
-  <div id="mapContainer"></div>
-  <div id="pointForm">
-    <label for="layerSelect">Categoría:</label>
-    <select id="layerSelect">
-      <option value="fisuras">Fisuras</option>
-      <option value="limpieza">Limpieza</option>
-      <option value="trapitos">Trapitos</option>
-      <option value="narcomenudeo">Narcomenudeo</option>
-      <option value="casas-tomadas">Casas Tomadas</option>
-      <option value="comercios-fisuras">Comercios Fisuras</option>
-      <option value="via-publica">Vía Pública</option>
-    </select>
-    <label for="addressInput">Dirección:</label>
-    <input type="text" id="addressInput" placeholder="Ingresá una dirección">
-    <button onclick="geocodeAddress()">Buscar</button>
-    <button onclick="getCurrentLocation()">Ubicación Actual</button>
-    <label for="userInput">Usuario:</label>
-    <input type="text" id="userInput" placeholder="Anónimo">
-    <label for="titleInput">Título:</label>
-    <input type="text" id="titleInput">
-    <label for="descriptionInput">Descripción:</label>
-    <textarea id="descriptionInput"></textarea>
-    <label for="photoInput">Fotos (máx. 5, JPG/PNG):</label>
-    <input type="file" id="photoInput" accept="image/jpeg,image/png" multiple>
-    <button id="submitBtn" onclick="submitPoint()">Enviar Punto</button>
-  </div>
-  <div id="pointDetails">
-    <div id="photoContainer"></div>
-  </div>
-  <div id="imageOverlay" onclick="hideOverlay(event)"></div>
-  <div id="layerControls">
-    <h3>Capas</h3>
-    <label style="background-color: red"><input type="checkbox" id="fisurasCheck" checked onchange="updateLayers()"> Fisuras</label>
-    <label style="background-color: green"><input type="checkbox" id="limpiezaCheck" checked onchange="updateLayers()"> Limpieza</label>
-    <label style="background-color: yellow"><input type="checkbox" id="trapitosCheck" checked onchange="updateLayers()"> Trapitos</label>
-    <label style="background-color: purple"><input type="checkbox" id="narcomenudeoCheck" checked onchange="updateLayers()"> Narcomenudeo</label>
-    <label style="background-color: orange"><input type="checkbox" id="casas-tomadasCheck" checked onchange="updateLayers()"> Casas Tomadas</label>
-    <label style="background-color: pink"><input type="checkbox" id="comercios-fisurasCheck" checked onchange="updateLayers()"> Comercios Fisuras</label>
-    <label style="background-color: gray"><input type="checkbox" id="via-publicaCheck" checked onchange="updateLayers()"> Vía Pública</label>
-    <label style="background-color: blue"><input type="checkbox" id="comisariasCheck" checked onchange="updateLayers()"> Comisarías</label>
-    <button onclick="selectAllLayers()">Ver todo</button>
-    <button onclick="deselectAllLayers()">Ninguna</button>
-  </div>
-  <div id="savingMessage">Guardando punto, por favor esperá...</div>
+  <!-- ... (resto igual) -->
+  <div id="imageOverlay" onclick="hideOverlay()"></div>
+  <!-- ... (resto igual) -->
+</body>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  <script>
-    let latitude, longitude;
-    let currentMarker = null;
-    let isEditing = false;
-    let currentImages = [];
-    let currentImageIndex = -1;
-    const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
+<script>
+  // ... (resto igual)
 
-    const iconBase = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-';
-    const icons = {
-      'fisuras': L.icon({ iconUrl: `${iconBase}red.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
-      'limpieza': L.icon({ iconUrl: `${iconBase}green.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
-      'trapitos': L.icon({ iconUrl: `${iconBase}yellow.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
-      'narcomenudeo': L.icon({ iconUrl: `${iconBase}violet.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
-      'casas-tomadas': L.icon({ iconUrl: `${iconBase}orange.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
-      'comercios-fisuras': L.icon({ iconUrl: `${iconBase}pink.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
-      'via-publica': L.icon({ iconUrl: `${iconBase}grey.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
-      'comisarias': L.icon({ iconUrl: `${iconBase}blue.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] })
-    };
+  function hideOverlay() { // Simplificado, sin 'event'
+    document.getElementById('imageOverlay').style.display = 'none';
+  }
 
-    const layersConfig = {
-      'fisuras': { color: 'red', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/1cb1d8e5bf02d884ae4dd0cca5c7ca97/raw/fisuras-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/ca1084559d9fc6c5a91a6175d424bd2c/raw/fisuras-temporal.geojson' },
-      'limpieza': { color: 'green', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/2c3d4d9e4a21d504b2c268debc71f8ec/raw/limpieza-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/52640ef61feae0ba47fa5c1b50a4bb03/raw/limpieza-temporal.geojson' },
-      'trapitos': { color: 'yellow', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/3a03f67f71c4a786a77e02272627ca05/raw/trapitos-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/4b5ae0b59d4cbbad161f0234906cb1cd/raw/trapitos-temporal.geojson' },
-      'narcomenudeo': { color: 'purple', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/5efc8ea5b5a449f028a6a52fa198dbb5/raw/narcomenudeo-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/363f43d4842fa35a3357ae2c474a6fff/raw/narcomenudeo-temporal.geojson' },
-      'casas-tomadas': { color: 'orange', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/302f0ad335f67a6e636191a63d7eb14d/raw/casasTomadas-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/9a74c688f462688e1d712989c275d853/raw/casasTomadas-temporal.geojson' },
-      'comercios-fisuras': { color: 'pink', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/b9007a080910fab28432b60de9478e6a/raw/comerciosFisura-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/3a1ca4ff9425fbac6d887aba7e414f98/raw/comerciosFisura-temporal.geojson' },
-      'via-publica': { color: 'gray', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/daa897ed4fbfba087549e4abea37412c/raw/viaPublica-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/79af8d490561594d4bd4f739ae5e9356/raw/viaPublica-temporal.geojson' },
-      'comisarias': { color: 'blue', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/33d1ed2480106a5f6e044720607b01cc/raw/comisarias.geojson', tempUrl: null }
-    };
+  function showOverlay(url, layer, imageUrls, index) {
+    currentImages = imageUrls;
+    currentImageIndex = index;
+    const overlay = document.getElementById('imageOverlay');
+    overlay.innerHTML = `
+      <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}'); event.stopPropagation();">◄</span>
+      <img src="${url}" style="border-color: ${layersConfig[layer].color}">
+      <span class="nav-arrow next" onclick="navigateImages(1, '${layer}'); event.stopPropagation();">►</span>
+    `;
+    overlay.style.display = 'flex';
+  }
 
-    const clusterGroups = {};
-    Object.keys(layersConfig).forEach(layer => {
-      clusterGroups[layer] = L.markerClusterGroup({
-        iconCreateFunction: cluster => {
-          return L.divIcon({
-            html: `<span style="background-color: ${layersConfig[layer].color}; font-size: 16px; padding: 5px; color: white;">${cluster.getChildCount()}</span>`,
-            className: 'marker-cluster',
-            iconSize: L.point(40, 40)
-          });
-        }
-      });
-    });
+  function navigateImages(direction, layer) {
+    currentImageIndex += direction;
+    if (currentImageIndex < 0) currentImageIndex = currentImages.length - 1;
+    if (currentImageIndex >= currentImages.length) currentImageIndex = 0;
+    const overlay = document.getElementById('imageOverlay');
+    overlay.innerHTML = `
+      <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}'); event.stopPropagation();">◄</span>
+      <img src="${currentImages[currentImageIndex]}" style="border-color: ${layersConfig[layer].color}">
+      <span class="nav-arrow next" onclick="navigateImages(1, '${layer}'); event.stopPropagation();">►</span>
+    `;
+  }
 
-    function createPopupContent(title, user) {
-      return `<b>${title}</b><br>Usuario: ${user}`;
-    }
-
-    function showDetails(imageUrls, layer) {
-      if (!isEditing) {
-        document.getElementById('pointDetails').style.display = 'block';
-        const photoContainer = document.getElementById('photoContainer');
-        photoContainer.innerHTML = '';
-        imageUrls.forEach((url, index) => {
-          const img = document.createElement('img');
-          img.src = url;
-          img.onclick = () => showOverlay(url, layer, imageUrls, index);
-          photoContainer.appendChild(img);
-        });
-      }
-    }
-
-    function hideOverlay(event) {
-      if (event.target.id === 'imageOverlay') {
-        document.getElementById('imageOverlay').style.display = 'none';
-      }
-    }
-
-    function showOverlay(url, layer, imageUrls, index) {
-      currentImages = imageUrls;
-      currentImageIndex = index;
-      const overlay = document.getElementById('imageOverlay');
-      overlay.innerHTML = `
-        <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}')">◄</span>
-        <img src="${url}" style="border-color: ${layersConfig[layer].color}">
-        <span class="nav-arrow next" onclick="navigateImages(1, '${layer}')">►</span>
-      `;
-      overlay.style.display = 'flex';
-    }
-
-    function navigateImages(direction, layer) {
-      currentImageIndex += direction;
-      if (currentImageIndex < 0) currentImageIndex = currentImages.length - 1;
-      if (currentImageIndex >= currentImages.length) currentImageIndex = 0;
-      const overlay = document.getElementById('imageOverlay');
-      overlay.innerHTML = `
-        <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}')">◄</span>
-        <img src="${currentImages[currentImageIndex]}" style="border-color: ${layersConfig[layer].color}">
-        <span class="nav-arrow next" onclick="navigateImages(1, '${layer}')">►</span>
-      `;
-    }
-
-    function hideDetails() {
+  function toggleMode(lastCreatedLayer = null) {
+    if (isEditing) {
+      isEditing = false;
+      document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Visor';
+      document.getElementById('pointForm').style.display = 'none';
+      document.getElementById('addPointBtn').textContent = 'Agregar Punto';
       document.getElementById('pointDetails').style.display = 'none';
-    }
-
-    async function loadPoints() {
-      const timestamp = Date.now(); // Solo para recarga inicial
-      for (const layer in layersConfig) {
-        const config = layersConfig[layer];
-        clusterGroups[layer].clearLayers();
-
-        try {
-          const fixedResponse = await fetch(`${config.fixedUrl}?t=${timestamp}`);
-          const fixedData = await fixedResponse.json();
-          L.geoJSON(fixedData, {
-            pointToLayer: (feature, latlng) => {
-              return L.marker(latlng, { icon: icons[layer] });
-            },
-            onEachFeature: (feature, layerFeature) => {
-              const { name, description, user } = feature.properties;
-              const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
-              layerFeature.bindPopup(createPopupContent(name, user), { className: 'custom-popup' });
-              layerFeature.on('click', (e) => {
-                showDetails(imageUrls, layer);
-                L.DomEvent.stopPropagation(e);
-              });
-            }
-          }).addTo(clusterGroups[layer]);
-        } catch (e) { console.log(`No hay datos fijos para ${layer}`); }
-
-        if (config.tempUrl) {
-          try {
-            const tempResponse = await fetch(`${config.tempUrl}?t=${timestamp}`);
-            const tempData = await tempResponse.json();
-            L.geoJSON(tempData, {
-              pointToLayer: (feature, latlng) => {
-                return L.marker(latlng, { icon: icons[layer] });
-              },
-              onEachFeature: (feature, layerFeature) => {
-                const { name, description, user } = feature.properties;
-                const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
-                layerFeature.bindPopup(createPopupContent(name, user), { className: 'custom-popup' });
-                layerFeature.on('click', (e) => {
-                  showDetails(imageUrls, layer);
-                  L.DomEvent.stopPropagation(e);
-                });
-              }
-            }).addTo(clusterGroups[layer]);
-          } catch (e) { console.log(`No hay datos temporales para ${layer}`); }
-        }
-
-        if (document.getElementById(`${layer}Check`).checked) {
-          clusterGroups[layer].addTo(map);
-        }
-      }
-    }
-
-    function enableMapClick() {
-      map.on('click', (event) => {
-        if (isEditing) {
-          latitude = event.latlng.lat;
-          longitude = event.latlng.lng;
-          if (currentMarker) map.removeLayer(currentMarker);
-          const selectedLayer = document.getElementById('layerSelect').value;
-          currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
-        } else {
-          hideDetails();
-        }
-      });
-    }
-
-    function disableMapClick() {
-      map.off('click');
-      if (currentMarker) {
-        map.removeLayer(currentMarker);
-        currentMarker = null;
-      }
-    }
-
-    async function geocodeAddress() {
-      const address = document.getElementById('addressInput').value;
-      if (!address) {
-        alert('Ingresá una dirección para buscar.');
-        return;
-      }
-      try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`);
-        const data = await response.json();
-        if (data.length > 0) {
-          latitude = parseFloat(data[0].lat);
-          longitude = parseFloat(data[0].lon);
-          if (currentMarker) map.removeLayer(currentMarker);
-          const selectedLayer = document.getElementById('layerSelect').value;
-          currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
-          map.setView([latitude, longitude], 15);
-        } else {
-          alert('No se encontró la dirección.');
-        }
-      } catch (e) {
-        console.error('Error en geolocalización:', e);
-        alert('Error buscando la dirección.');
-      }
-    }
-
-    function getCurrentLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            latitude = position.coords.latitude;
-            longitude = position.coords.longitude;
-            if (currentMarker) map.removeLayer(currentMarker);
-            const selectedLayer = document.getElementById('layerSelect').value;
-            currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
-            map.setView([latitude, longitude], 15);
-          },
-          (error) => {
-            console.error('Error en ubicación actual:', error);
-            alert('No se pudo obtener tu ubicación. Asegurate de permitir el acceso.');
-          }
-        );
-      } else {
-        alert('Tu navegador no soporta geolocalización.');
-      }
-    }
-
-    function updateEditorLayer() {
-      if (isEditing) {
-        const selectedLayer = document.getElementById('layerSelect').value;
+      document.getElementById('layerControls').style.display = 'block';
+      disableMapClick();
+      enableMapClick();
+      document.getElementById('addressInput').value = '';
+      document.getElementById('userInput').value = '';
+      document.getElementById('titleInput').value = '';
+      document.getElementById('descriptionInput').value = '';
+      document.getElementById('photoInput').value = '';
+      if (lastCreatedLayer) {
+        // Forzar la capa del punto creado como visible
         Object.keys(clusterGroups).forEach(layer => {
-          if (layer === selectedLayer) {
+          if (layer === lastCreatedLayer) {
+            document.getElementById(`${layer}Check`).checked = true;
             clusterGroups[layer].addTo(map);
-          } else {
+          } else if (!document.getElementById(`${layer}Check`).checked) {
             map.removeLayer(clusterGroups[layer]);
           }
         });
-      }
-    }
-
-    function toggleMode() {
-      if (isEditing) {
-        isEditing = false;
-        document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Visor';
-        document.getElementById('pointForm').style.display = 'none';
-        document.getElementById('addPointBtn').textContent = 'Agregar Punto';
-        document.getElementById('pointDetails').style.display = 'none';
-        document.getElementById('layerControls').style.display = 'block';
-        disableMapClick();
-        enableMapClick();
-        document.getElementById('addressInput').value = '';
-        document.getElementById('userInput').value = '';
-        document.getElementById('titleInput').value = '';
-        document.getElementById('descriptionInput').value = '';
-        document.getElementById('photoInput').value = '';
+      } else {
         updateLayers();
-      } else {
-        isEditing = true;
-        document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Edición';
-        document.getElementById('pointForm').style.display = 'block';
-        document.getElementById('addPointBtn').textContent = 'Volver a Visor';
-        document.getElementById('pointDetails').style.display = 'none';
-        document.getElementById('layerControls').style.display = 'none';
-        enableMapClick();
-        updateEditorLayer();
       }
+    } else {
+      isEditing = true;
+      document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Edición';
+      document.getElementById('pointForm').style.display = 'block';
+      document.getElementById('addPointBtn').textContent = 'Volver a Visor';
+      document.getElementById('pointDetails').style.display = 'none';
+      document.getElementById('layerControls').style.display = 'none';
+      enableMapClick();
+      updateEditorLayer();
     }
+  }
 
-    document.getElementById('layerSelect').addEventListener('change', updateEditorLayer);
+  async function submitPoint() {
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    document.getElementById('savingMessage').style.display = 'block';
 
-    async function submitPoint() {
-      const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true;
-      document.getElementById('savingMessage').style.display = 'block';
+    const layer = document.getElementById('layerSelect').value;
+    const user = document.getElementById('userInput').value || 'Anónimo';
+    const title = document.getElementById('titleInput').value;
+    const description = document.getElementById('descriptionInput').value;
+    const photoInput = document.getElementById('photoInput');
+    const files = photoInput.files;
 
-      const layer = document.getElementById('layerSelect').value;
-      const user = document.getElementById('userInput').value || 'Anónimo';
-      const title = document.getElementById('titleInput').value;
-      const description = document.getElementById('descriptionInput').value;
-      const photoInput = document.getElementById('photoInput');
-      const files = photoInput.files;
-
-      if (!latitude || !longitude) {
-        alert('Hacé clic en el mapa, buscá una dirección o usá tu ubicación actual.');
-        submitBtn.disabled = false;
-        document.getElementById('savingMessage').style.display = 'none';
-        return;
-      }
-
-      if (!title) {
-        alert('Ingresá un título para el punto.');
-        submitBtn.disabled = false;
-        document.getElementById('savingMessage').style.display = 'none';
-        return;
-      }
-
-      if (files.length > 5) {
-        alert('Máximo 5 fotos permitidas.');
-        submitBtn.disabled = false;
-        document.getElementById('savingMessage').style.display = 'none';
-        return;
-      }
-
-      let imageUrls = [];
-      if (files.length > 0) {
-        for (const file of files) {
-          const validTypes = ['image/jpeg', 'image/png'];
-          if (!validTypes.includes(file.type)) {
-            alert(`Formato no soportado: ${file.name}. Usá JPG o PNG.`);
-            submitBtn.disabled = false;
-            document.getElementById('savingMessage').style.display = 'none';
-            return;
-          }
-          const formData = new FormData();
-          formData.append('image', file);
-          try {
-            const response = await fetch('https://api.imgur.com/3/image', {
-              method: 'POST',
-              headers: { Authorization: 'Client-ID 724f0aaea5b4c6b' },
-              body: formData
-            });
-            if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(`Error en Imgur: ${response.status} - ${errorText}`);
-            }
-            const data = await response.json();
-            if (data.success) {
-              imageUrls.push(data.data.link);
-            } else {
-              throw new Error('Imgur no devolvió éxito');
-            }
-          } catch (e) {
-            console.error('Error en Imgur:', e);
-            alert(`Error subiendo una foto: ${e.message}. Revisá los formatos e intentá de nuevo.`);
-            submitBtn.disabled = false;
-            document.getElementById('savingMessage').style.display = 'none';
-            return;
-          }
-        }
-      } else {
-        imageUrls.push('https://i.imgur.com/bLBkpWR.png');
-      }
-
-      const pointData = {
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [longitude, latitude] },
-        properties: {
-          name: title,
-          description: `${description} ${imageUrls.map(url => `{{${url}}}`).join(' ')}`,
-          user
-        }
-      };
-
-      console.log('Punto enviado:', pointData);
-
-      try {
-        const response = await fetch('/.netlify/functions/savePoint', {
-          method: 'POST',
-          body: JSON.stringify({ layer, point: pointData }),
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (!response.ok) throw new Error('Error al guardar en Gist');
-        const result = await response.json();
-
-        const marker = L.marker([latitude, longitude], { icon: icons[layer] });
-        marker.bindPopup(createPopupContent(title, user), { className: 'custom-popup' });
-        marker.on('click', (e) => {
-          showDetails(imageUrls, layer);
-          L.DomEvent.stopPropagation(e);
-        });
-        clusterGroups[layer].addLayer(marker);
-        if (!map.hasLayer(clusterGroups[layer])) {
-          clusterGroups[layer].addTo(map);
-        }
-
-        alert('Punto enviado con éxito');
-        toggleMode();
-        marker.openPopup();
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error al enviar. Revisá la consola.');
-      }
+    if (!latitude || !longitude) {
+      alert('Hacé clic en el mapa, buscá una dirección o usá tu ubicación actual.');
       submitBtn.disabled = false;
       document.getElementById('savingMessage').style.display = 'none';
+      return;
     }
 
-    function updateLayers() {
-      Object.keys(clusterGroups).forEach(layer => {
-        const checkbox = document.getElementById(`${layer}Check`);
-        if (checkbox.checked) {
-          if (!map.hasLayer(clusterGroups[layer])) {
-            clusterGroups[layer].addTo(map);
-          }
-        } else {
-          map.removeLayer(clusterGroups[layer]);
+    if (!title) {
+      alert('Ingresá un título para el punto.');
+      submitBtn.disabled = false;
+      document.getElementById('savingMessage').style.display = 'none';
+      return;
+    }
+
+    if (files.length > 5) {
+      alert('Máximo 5 fotos permitidas.');
+      submitBtn.disabled = false;
+      document.getElementById('savingMessage').style.display = 'none';
+      return;
+    }
+
+    let imageUrls = [];
+    if (files.length > 0) {
+      for (const file of files) {
+        const validTypes = ['image/jpeg', 'image/png'];
+        if (!validTypes.includes(file.type)) {
+          alert(`Formato no soportado: ${file.name}. Usá JPG o PNG.`);
+          submitBtn.disabled = false;
+          document.getElementById('savingMessage').style.display = 'none';
+          return;
         }
-      });
+        const formData = new FormData();
+        formData.append('image', file);
+        try {
+          const response = await fetch('https://api.imgur.com/3/image', {
+            method: 'POST',
+            headers: { Authorization: 'Client-ID 724f0aaea5b4c6b' },
+            body: formData
+          });
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Error en Imgur: ${response.status} - ${errorText}`);
+          }
+          const data = await response.json();
+          if (data.success) {
+            imageUrls.push(data.data.link);
+          } else {
+            throw new Error('Imgur no devolvió éxito');
+          }
+        } catch (e) {
+          console.error('Error en Imgur:', e);
+          alert(`Error subiendo una foto: ${e.message}. Revisá los formatos e intentá de nuevo.`);
+          submitBtn.disabled = false;
+          document.getElementById('savingMessage').style.display = 'none';
+          return;
+        }
+      }
+    } else {
+      imageUrls.push('https://i.imgur.com/bLBkpWR.png');
     }
 
-    function selectAllLayers() {
-      Object.keys(clusterGroups).forEach(layer => {
-        const checkbox = document.getElementById(`${layer}Check`);
-        checkbox.checked = true;
+    const pointData = {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [longitude, latitude] },
+      properties: {
+        name: title,
+        description: `${description} ${imageUrls.map(url => `{{${url}}}`).join(' ')}`,
+        user
+      }
+    };
+
+    console.log('Punto enviado:', pointData);
+
+    try {
+      const response = await fetch('/.netlify/functions/savePoint', {
+        method: 'POST',
+        body: JSON.stringify({ layer, point: pointData }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error('Error al guardar en Gist');
+      const result = await response.json();
+
+      const marker = L.marker([latitude, longitude], { icon: icons[layer] });
+      marker.bindPopup(createPopupContent(title, user), { className: 'custom-popup' });
+      marker.on('click', (e) => {
+        showDetails(imageUrls, layer);
+        L.DomEvent.stopPropagation(e);
+      });
+      clusterGroups[layer].addLayer(marker);
+      if (!map.hasLayer(clusterGroups[layer])) {
         clusterGroups[layer].addTo(map);
-      });
-    }
+      }
 
-    function deselectAllLayers() {
-      Object.keys(clusterGroups).forEach(layer => {
-        const checkbox = document.getElementById(`${layer}Check`);
-        checkbox.checked = false;
-        map.removeLayer(clusterGroups[layer]);
-      });
-      hideDetails();
+      alert('Punto enviado con éxito');
+      toggleMode(layer); // Pasamos la capa creada
+      marker.openPopup();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al enviar. Revisá la consola.');
     }
+    submitBtn.disabled = false;
+    document.getElementById('savingMessage').style.display = 'none';
+  }
 
-    loadPoints();
-    enableMapClick();
-  </script>
-</body>
-</html>
+  // ... (resto igual)
+</script>
