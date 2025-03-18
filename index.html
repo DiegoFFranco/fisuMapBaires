@@ -27,8 +27,8 @@
     #imageOverlay .next { right: 10px; }
     #layerControls { position: absolute; top: 50px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
     #layerControls h3 { text-align: center; margin: 0 0 10px; }
-    #layerControls label { display: block; padding: 5px; margin: 2px 0; font-weight: bold; }
-    .custom-popup { max-width: 250px; background: #333; color: #fff; }
+    #layerControls label { display: block; padding: 5px; margin: 2px 0; font-weight: bold; color: #fff; }
+    .custom-popup { max-width: 300px; background: #333; color: #fff; font-size: 16px; }
     input, select, textarea, button { background: #444; color: #fff; border: 1px solid #666; }
     #savingMessage { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3000; background: #444; padding: 10px; border: 1px solid #666; }
   </style>
@@ -130,8 +130,8 @@
       });
     });
 
-    function createPopupContent(title, user) {
-      return `<b>${title}</b><br>Usuario: ${user}`;
+    function createPopupContent(title, user, description) {
+      return `<b>${title}</b><br>Usuario: ${user}<br>Descripción: ${description || 'Sin descripción'}`;
     }
 
     function showDetails(imageUrls, layer) {
@@ -196,7 +196,8 @@
             onEachFeature: (feature, layerFeature) => {
               const { name, description, user } = feature.properties;
               const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
-              layerFeature.bindPopup(createPopupContent(name, user), { className: 'custom-popup' });
+              const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
+              layerFeature.bindPopup(createPopupContent(name, user, cleanDescription), { className: 'custom-popup' });
               layerFeature.on('click', (e) => {
                 showDetails(imageUrls, layer);
                 L.DomEvent.stopPropagation(e);
@@ -216,7 +217,8 @@
               onEachFeature: (feature, layerFeature) => {
                 const { name, description, user } = feature.properties;
                 const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
-                layerFeature.bindPopup(createPopupContent(name, user), { className: 'custom-popup' });
+                const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
+                layerFeature.bindPopup(createPopupContent(name, user, cleanDescription), { className: 'custom-popup' });
                 layerFeature.on('click', (e) => {
                   showDetails(imageUrls, layer);
                   L.DomEvent.stopPropagation(e);
@@ -330,10 +332,12 @@
         document.getElementById('photoInput').value = '';
         if (lastCreatedLayer) {
           Object.keys(clusterGroups).forEach(layer => {
+            const checkbox = document.getElementById(`${layer}Check`);
             if (layer === lastCreatedLayer) {
-              document.getElementById(`${layer}Check`).checked = true;
+              checkbox.checked = true;
               clusterGroups[layer].addTo(map);
-            } else if (!document.getElementById(`${layer}Check`).checked) {
+            } else {
+              checkbox.checked = false;
               map.removeLayer(clusterGroups[layer]);
             }
           });
@@ -449,7 +453,8 @@
         const result = await response.json();
 
         const marker = L.marker([latitude, longitude], { icon: icons[layer] });
-        marker.bindPopup(createPopupContent(title, user), { className: 'custom-popup' });
+        const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
+        marker.bindPopup(createPopupContent(title, user, cleanDescription), { className: 'custom-popup' });
         marker.on('click', (e) => {
           showDetails(imageUrls, layer);
           L.DomEvent.stopPropagation(e);
