@@ -148,10 +148,10 @@ body {
   }
   
   #layerControls label[for="trapitosCheck"],
-  #layerControls label[for="comercios-fisurasCheck"] {
+  /*#layerControls label[for="comercios-fisurasCheck"] {
     color: #000;
   }
-  
+  */
   .custom-popup {
     max-width: 300px;
     padding: 10px;
