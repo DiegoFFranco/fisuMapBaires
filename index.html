@@ -29,10 +29,9 @@
     #layerControls h3 { text-align: center; margin: 0 0 10px; }
     #layerControls label { display: block; padding: 5px; margin: 2px 0; font-weight: bold; color: #fff; }
     #layerControls label[for="trapitosCheck"], #layerControls label[for="comercios-fisurasCheck"] { color: #000; }
-    .custom-popup { max-width: 300px; padding: 10px; border: none; }
+    .custom-popup { max-width: 300px; font-size: 14px; padding: 10px; border: none; }
     .custom-popup .title { display: block; text-align: center; font-size: 18px; font-weight: bold; }
-    .custom-popup .detail { font-size: 14px; }
-    .custom-popup .detail b { font-weight: bold; }
+    .custom-popup .field { font-weight: bold; }
     .custom-popup.light-text { color: #000; }
     .custom-popup.dark-text { color: #fff; }
     input, select, textarea, button { background: #444; color: #fff; border: 1px solid #666; }
@@ -141,9 +140,9 @@
       return `
         <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${layersConfig[layer].color}">
           <span class="title">${title}</span>
-          <div class="detail"><b>Usuario:</b> ${user}</div>
-          <div class="detail"><b>Descripción:</b> ${description || 'Sin descripción'}</div>
-          <div class="detail"><b>Dirección:</b> ${address || 'Sin dirección'}</div>
+          <div><span class="field">Usuario:</span> ${user}</div>
+          <div><span class="field">Descripción:</span> ${description || 'Sin descripción'}</div>
+          <div><span class="field">Dirección:</span> ${address || 'Sin dirección'}</div>
         </div>
       `;
     }
