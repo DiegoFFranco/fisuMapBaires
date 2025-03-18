@@ -398,8 +398,11 @@ async function submitPoint() {
       body: JSON.stringify({ layer, point: pointData }),
       headers: { 'Content-Type': 'application/json' }
     });
-    if (!response.ok) throw new Error('Error al guardar en Gist');
     const result = await response.json();
+    if (!response.ok) {
+      throw new Error(`Error al guardar en Gist: ${result.error || response.statusText}`);
+    }
+    console.log('Respuesta de savePoint:', result); // Para depurar la respuesta
 
     const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
 
@@ -423,8 +426,8 @@ async function submitPoint() {
     marker.openPopup();
     showDetails(imageUrls, layer);
   } catch (error) {
-    console.error('Error:', error);
-    alert('Error al enviar. Revisá la consola.');
+    console.error('Error al enviar el punto:', error);
+    alert(`Error al enviar: ${error.message}`);
   }
   submitBtn.disabled = false;
   document.getElementById('savingMessage').style.display = 'none';
