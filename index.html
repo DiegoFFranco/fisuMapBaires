@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,215 +8,41 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #1a1a1a;
-      color: #fff;
-    }
-
-    #mapContainer {
-      height: calc(100vh - 70px);
-      width: 100%;
-    }
-
-    #modeTitle {
-      text-align: center;
-      margin: 10px 0;
-    }
-
-    #addPointBtn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1000;
-      padding: 5px 10px;
-      background: #333;
-      color: #fff;
-      border: none;
-    }
-
-    #pointForm {
-      display: none;
-      position: absolute;
-      top: 50px;
-      left: 10px;
-      z-index: 1000;
-      background: #333;
-      padding: 15px;
-      border: 1px solid #555;
-      color: #fff;
-      width: 300px;
-    }
-
-    #pointForm label {
-      display: block;
-      margin: 5px 0;
-    }
-
-    #pointForm input,
-    #pointForm select,
-    #pointForm textarea {
-      width: 100%;
-      margin-bottom: 10px;
-    }
-
-    #pointForm textarea {
-      height: 80px;
-    }
-
-    #pointForm button {
-      margin-top: 5px;
-    }
-
-    #pointDetails {
-      display: none;
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      right: 10px;
-      z-index: 1000;
-      background: #333;
-      padding: 10px;
-      border: 1px solid #555;
-      color: #fff;
-    }
-
-    #photoContainer {
-      display: flex;
-      flex-wrap: nowrap;
-      justify-content: flex-start;
-      width: 100%;
-      overflow-x: auto;
-      padding: 5px 0;
-    }
-
-    #photoContainer img {
-      height: 100px;
-      margin: 0 5px;
-      cursor: pointer;
-    }
-
-    #imageOverlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 2000;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-    }
-
-    #imageOverlay img {
-      max-width: 90%;
-      max-height: 90%;
-      border: 5px solid;
-    }
-
-    #imageOverlay .nav-arrow {
-      position: absolute;
-      top: 50%;
-      font-size: 40px;
-      color: #fff;
-      cursor: pointer;
-    }
-
-    #imageOverlay .prev {
-      left: 10px;
-    }
-
-    #imageOverlay .next {
-      right: 10px;
-    }
-
-    #layerControls {
-      position: absolute;
-      top: 50px;
-      right: 10px;
-      z-index: 1000;
-      background: #333;
-      padding: 10px;
-      border: 1px solid #555;
-      color: #fff;
-    }
-
-    #layerControls h3 {
-      text-align: center;
-      margin: 0 0 10px;
-    }
-
-    #layerControls label {
-      display: block;
-      padding: 5px;
-      margin: 2px 0;
-      font-weight: bold;
-      color: #fff;
-    }
-
-    #layerControls label[for="trapitosCheck"],
-    #layerControls label[for="comercios-fisurasCheck"] {
-      color: #000;
-    }
-
-    .custom-popup {
-      max-width: 300px;
-      padding: 10px;
-      border: none;
-    }
-
-    .custom-popup .title {
-      display: block;
-      text-align: center;
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .custom-popup .detail {
-      font-size: 14px;
-    }
-
-    .custom-popup .detail b {
-      font-weight: bold;
-    }
-
-    .custom-popup.light-text {
-      color: #000;
-    }
-
-    .custom-popup.dark-text {
-      color: #fff;
-    }
-
-    input,
-    select,
-    textarea,
-    button {
-      background: #444;
-      color: #fff;
-      border: 1px solid #666;
-    }
-
-    #savingMessage {
-      display: none;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 3000;
-      background: #444;
-      padding: 10px;
-      border: 1px solid #666;
-    }
+    body { margin: 0; font-family: Arial, sans-serif; background-color: #1a1a1a; color: #fff; }
+    #mapContainer { height: calc(100vh - 70px); width: 100%; }
+    #modeTitle { text-align: center; margin: 10px 0; }
+    #addPointBtn { position: absolute; top: 10px; right: 10px; z-index: 1000; padding: 5px 10px; background: #333; color: #fff; border: none; }
+    #pointForm { display: none; position: absolute; top: 50px; left: 10px; z-index: 1000; background: #333; padding: 15px; border: 1px solid #555; color: #fff; width: 300px; height: 500px; overflow-y: auto; }
+    #pointForm label { display: block; margin: 5px 0; }
+    #pointForm input, #pointForm select, #pointForm textarea { width: 100%; margin-bottom: 10px; }
+    #pointForm textarea { height: 100px; }
+    #pointForm button { margin-top: 5px; }
+    #pointDetails { display: none; position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
+    #photoContainer { display: flex; flex-wrap: nowrap; justify-content: flex-start; width: 100%; overflow-x: auto; padding: 5px 0; }
+    #photoContainer img { height: 100px; margin: 0 5px; cursor: pointer; }
+    #imageOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; cursor: pointer; }
+    #imageOverlay img { max-width: 90%; max-height: 90%; border: 5px solid; }
+    #imageOverlay .nav-arrow { position: absolute; top: 50%; font-size: 40px; color: #fff; cursor: pointer; }
+    #imageOverlay .prev { left: 10px; }
+    #imageOverlay .next { right: 10px; }
+    #layerControls { position: absolute; top: 50px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
+    #layerControls h3 { text-align: center; margin: 0 0 10px; }
+    #layerControls label { display: flex; align-items: center; padding: 5px; margin: 2px 0; font-weight: bold; color: #fff; }
+    #layerControls label[for="trapitosCheck"], #layerControls label[for="comercios-fisurasCheck"] { color: #000; }
+    #layerControls span { margin-left: 5px; font-weight: normal; }
+    .custom-popup { max-width: 300px; font-size: 16px; padding: 10px; }
+    .custom-popup b { display: block; text-align: center; font-size: 18px; }
+    .custom-popup.light-text { color: #000; }
+    .custom-popup.dark-text { color: #fff; }
+    input, select, textarea, button { background: #444; color: #fff; border: 1px solid #666; }
+    #savingMessage { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3000; background: #444; padding: 10px; border: 1px solid #666; }
+    #clearDataBtn { position: absolute; top: 10px; right: 100px; z-index: 1000; padding: 5px 10px; background: #f00; color: #fff; border: none; }
   </style>
 </head>
-
 <body>
   <h2 id="modeTitle">fisuMapBaires - Modo Visor</h2>
   <button id="addPointBtn" onclick="toggleMode()">Agregar Punto</button>
+  <button id="clearDataBtn" onclick="clearAllData()">Borrar Todos los Datos</button>
   <div id="mapContainer"></div>
   <div id="pointForm">
     <label for="layerSelect">Categoría:</label>
@@ -250,22 +75,14 @@
   <div id="imageOverlay" onclick="hideOverlay()"></div>
   <div id="layerControls">
     <h3>Capas</h3>
-    <label style="background-color: red" for="fisurasCheck"><input type="checkbox" id="fisurasCheck" checked
-        onchange="updateLayers()"> Fisuras</label>
-    <label style="background-color: green" for="limpiezaCheck"><input type="checkbox" id="limpiezaCheck" checked
-        onchange="updateLayers()"> Limpieza</label>
-    <label style="background-color: yellow" for="trapitosCheck"><input type="checkbox" id="trapitosCheck" checked
-        onchange="updateLayers()"> Trapitos</label>
-    <label style="background-color: purple" for="narcomenudeoCheck"><input type="checkbox" id="narcomenudeoCheck"
-        checked onchange="updateLayers()"> Narcomenudeo</label>
-    <label style="background-color: orange" for="casas-tomadasCheck"><input type="checkbox" id="casas-tomadasCheck"
-        checked onchange="updateLayers()"> Casas Tomadas</label>
-    <label style="background-color: pink" for="comercios-fisurasCheck"><input type="checkbox"
-        id="comercios-fisurasCheck" checked onchange="updateLayers()"> Comercios Fisuras</label>
-    <label style="background-color: gray" for="via-publicaCheck"><input type="checkbox" id="via-publicaCheck" checked
-        onchange="updateLayers()"> Vía Pública</label>
-    <label style="background-color: blue" for="comisariasCheck"><input type="checkbox" id="comisariasCheck" checked
-        onchange="updateLayers()"> Comisarías</label>
+    <label style="background-color: red" for="fisurasCheck"><input type="checkbox" id="fisurasCheck" checked onchange="updateLayers()"> Fisuras <span id="fisurasCount"></span></label>
+    <label style="background-color: green" for="limpiezaCheck"><input type="checkbox" id="limpiezaCheck" checked onchange="updateLayers()"> Limpieza <span id="limpiezaCount"></span></label>
+    <label style="background-color: yellow" for="trapitosCheck"><input type="checkbox" id="trapitosCheck" checked onchange="updateLayers()"> Trapitos <span id="trapitosCount"></span></label>
+    <label style="background-color: purple" for="narcomenudeoCheck"><input type="checkbox" id="narcomenudeoCheck" checked onchange="updateLayers()"> Narcomenudeo <span id="narcomenudeoCount"></span></label>
+    <label style="background-color: orange" for="casas-tomadasCheck"><input type="checkbox" id="casas-tomadasCheck" checked onchange="updateLayers()"> Casas Tomadas <span id="casas-tomadasCount"></span></label>
+    <label style="background-color: #ff69b4" for="comercios-fisurasCheck"><input type="checkbox" id="comercios-fisurasCheck" checked onchange="updateLayers()"> Comercios Fisuras <span id="comercios-fisurasCount"></span></label>
+    <label style="background-color: gray" for="via-publicaCheck"><input type="checkbox" id="via-publicaCheck" checked onchange="updateLayers()"> Vía Pública <span id="via-publicaCount"></span></label>
+    <label style="background-color: blue" for="comisariasCheck"><input type="checkbox" id="comisariasCheck" checked onchange="updateLayers()"> Comisarías <span id="comisariasCount"></span></label>
     <button onclick="selectAllLayers()">Ver todo</button>
     <button onclick="deselectAllLayers()">Ninguna</button>
   </div>
@@ -291,7 +108,7 @@
       'trapitos': L.icon({ iconUrl: `${iconBase}yellow.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
       'narcomenudeo': L.icon({ iconUrl: `${iconBase}violet.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
       'casas-tomadas': L.icon({ iconUrl: `${iconBase}orange.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
-      'comercios-fisuras': L.icon({ iconUrl: `${iconBase}pink.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
+      'comercios-fisuras': L.icon({ iconUrl: `${iconBase}gold.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
       'via-publica': L.icon({ iconUrl: `${iconBase}grey.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
       'comisarias': L.icon({ iconUrl: `${iconBase}blue.png`, shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] })
     };
@@ -302,7 +119,7 @@
       'trapitos': { color: 'yellow', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/3a03f67f71c4a786a77e02272627ca05/raw/trapitos-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/4b5ae0b59d4cbbad161f0234906cb1cd/raw/trapitos-temporal.geojson' },
       'narcomenudeo': { color: 'purple', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/5efc8ea5b5a449f028a6a52fa198dbb5/raw/narcomenudeo-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/363f43d4842fa35a3357ae2c474a6fff/raw/narcomenudeo-temporal.geojson' },
       'casas-tomadas': { color: 'orange', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/302f0ad335f67a6e636191a63d7eb14d/raw/casasTomadas-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/9a74c688f462688e1d712989c275d853/raw/casasTomadas-temporal.geojson' },
-      'comercios-fisuras': { color: 'pink', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/b9007a080910fab28432b60de9478e6a/raw/comerciosFisura-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/3a1ca4ff9425fbac6d887aba7e414f98/raw/comerciosFisura-temporal.geojson' },
+      'comercios-fisuras': { color: '#ff69b4', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/b9007a080910fab28432b60de9478e6a/raw/comerciosFisura-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/3a1ca4ff9425fbac6d887aba7e414f98/raw/comerciosFisura-temporal.geojson' },
       'via-publica': { color: 'gray', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/daa897ed4fbfba087549e4abea37412c/raw/viaPublica-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/79af8d490561594d4bd4f739ae5e9356/raw/viaPublica-temporal.geojson' },
       'comisarias': { color: 'blue', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/33d1ed2480106a5f6e044720607b01cc/raw/comisarias.geojson', tempUrl: null }
     };
@@ -311,8 +128,9 @@
     Object.keys(layersConfig).forEach(layer => {
       clusterGroups[layer] = L.markerClusterGroup({
         iconCreateFunction: cluster => {
+          const isLightBackground = ['yellow', '#ff69b4'].includes(layersConfig[layer].color);
           return L.divIcon({
-            html: `<span style="background-color: ${layersConfig[layer].color}; font-size: 16px; padding: 5px; color: white;">${cluster.getChildCount()}</span>`,
+            html: `<span style="background-color: ${layersConfig[layer].color}; font-size: 16px; padding: 5px; color: ${isLightBackground ? '#000' : '#fff'};">${cluster.getChildCount()}</span>`,
             className: 'marker-cluster',
             iconSize: L.point(40, 40)
           });
@@ -321,13 +139,13 @@
     });
 
     function createPopupContent(title, user, description, address, layer) {
-      const isLightBackground = ['yellow', 'pink'].includes(layersConfig[layer].color);
+      const isLightBackground = ['yellow', '#ff69b4'].includes(layersConfig[layer].color);
       return `
         <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${layersConfig[layer].color}">
-          <span class="title">${title}</span>
-          <div class="detail"><b>Usuario:</b> ${user}</div>
-          <div class="detail"><b>Descripción:</b> ${description || 'Sin descripción'}</div>
-          <div class="detail"><b>Dirección:</b> ${address || 'Sin dirección'}</div>
+          <b>${title}</b>
+          <div><b>Usuario:</b> ${user}</div>
+          <div><b>Descripción:</b> ${description || 'Sin descripción'}</div>
+          <div><b>Dirección:</b> ${address || 'Sin dirección'}</div>
         </div>
       `;
     }
@@ -384,9 +202,11 @@
         const config = layersConfig[layer];
         clusterGroups[layer].clearLayers();
 
+        let pointCount = 0;
         try {
           const fixedResponse = await fetch(`${config.fixedUrl}?t=${timestamp}`);
           const fixedData = await fixedResponse.json();
+          pointCount += fixedData.features.length;
           L.geoJSON(fixedData, {
             pointToLayer: (feature, latlng) => {
               return L.marker(latlng, { icon: icons[layer] });
@@ -408,6 +228,7 @@
           try {
             const tempResponse = await fetch(`${config.tempUrl}?t=${timestamp}`);
             const tempData = await tempResponse.json();
+            pointCount += tempData.features.length;
             L.geoJSON(tempData, {
               pointToLayer: (feature, latlng) => {
                 return L.marker(latlng, { icon: icons[layer] });
@@ -426,6 +247,7 @@
           } catch (e) { console.log(`No hay datos temporales para ${layer}`); }
         }
 
+        document.getElementById(`${layer}Count`).textContent = `(${pointCount})`;
         if (document.getElementById(`${layer}Check`).checked) {
           clusterGroups[layer].addTo(map);
         }
@@ -440,6 +262,7 @@
           if (currentMarker) map.removeLayer(currentMarker);
           const selectedLayer = document.getElementById('layerSelect').value;
           currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
+          document.getElementById('addressInput').value = `Lat: ${latitude}, Lon: ${longitude}`;
         } else {
           hideDetails();
         }
@@ -511,10 +334,6 @@
             map.removeLayer(clusterGroups[layer]);
           }
         });
-        if (currentMarker && latitude && longitude) {
-          map.removeLayer(currentMarker);
-          currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
-        }
       }
     }
 
@@ -672,7 +491,6 @@
         alert('Punto enviado con éxito');
         toggleMode(layer);
         marker.openPopup();
-        showDetails(imageUrls, layer); // Mostrar fotos inmediatamente
       } catch (error) {
         console.error('Error:', error);
         alert('Error al enviar. Revisá la consola.');
@@ -711,9 +529,19 @@
       hideDetails();
     }
 
+    function clearAllData() {
+      if (confirm('¿Estás seguro de borrar todos los datos? Esto no se puede deshacer.')) {
+        Object.keys(clusterGroups).forEach(layer => {
+          clusterGroups[layer].clearLayers();
+          map.removeLayer(clusterGroups[layer]);
+          document.getElementById(`${layer}Count`).textContent = '(0)';
+        });
+        alert('Todos los datos fueron borrados.');
+      }
+    }
+
     loadPoints();
     enableMapClick();
   </script>
 </body>
-
 </html>
