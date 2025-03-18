@@ -480,14 +480,24 @@
       }
     }
 
-    function enableMapClick() {
-      map.on('click', (event) => {
+    async function enableMapClick() {
+      map.on('click', async (event) => {
         if (isEditing) {
           latitude = event.latlng.lat;
           longitude = event.latlng.lng;
           if (currentMarker) map.removeLayer(currentMarker);
           const selectedLayer = document.getElementById('layerSelect').value;
           currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
+
+          // Geocodificación inversa para actualizar el campo
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+            const data = await response.json();
+            document.getElementById('addressInput').value = data.display_name || `Lat: ${latitude}, Lon: ${longitude}`;
+          } catch (e) {
+            console.error('Error en geocodificación inversa:', e);
+            document.getElementById('addressInput').value = `Lat: ${latitude}, Lon: ${longitude}`;
+          }
         } else {
           hideDetails();
         }
@@ -518,6 +528,8 @@
           const selectedLayer = document.getElementById('layerSelect').value;
           currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
           map.setView([latitude, longitude], 15);
+          // Actualizar el campo con la dirección exacta
+          document.getElementById('addressInput').value = data[0].display_name;
         } else {
           alert('No se encontró la dirección.');
         }
@@ -530,14 +542,22 @@
     function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (position) => {
+          async (position) => {
             latitude = position.coords.latitude;
             longitude = position.coords.longitude;
             if (currentMarker) map.removeLayer(currentMarker);
             const selectedLayer = document.getElementById('layerSelect').value;
             currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
             map.setView([latitude, longitude], 15);
-            document.getElementById('addressInput').value = `Lat: ${latitude}, Lon: ${longitude}`;
+            // Geocodificación inversa
+            try {
+              const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+              const data = await response.json();
+              document.getElementById('addressInput').value = data.display_name || `Lat: ${latitude}, Lon: ${longitude}`;
+            } catch (e) {
+              console.error('Error en geocodificación inversa:', e);
+              document.getElementById('addressInput').value = `Lat: ${latitude}, Lon: ${longitude}`;
+            }
           },
           (error) => {
             console.error('Error en ubicación actual:', error);
