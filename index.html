@@ -28,7 +28,11 @@
     #layerControls { position: absolute; top: 50px; right: 10px; z-index: 1000; background: #333; padding: 10px; border: 1px solid #555; color: #fff; }
     #layerControls h3 { text-align: center; margin: 0 0 10px; }
     #layerControls label { display: block; padding: 5px; margin: 2px 0; font-weight: bold; color: #fff; }
-    .custom-popup { max-width: 300px; background: #333; color: #fff; font-size: 16px; }
+    #layerControls label[for="trapitosCheck"], #layerControls label[for="comercios-fisurasCheck"] { color: #000; }
+    .custom-popup { max-width: 300px; font-size: 16px; padding: 10px; }
+    .custom-popup b { display: block; text-align: center; font-size: 18px; }
+    .custom-popup.light-text { color: #000; }
+    .custom-popup.dark-text { color: #fff; }
     input, select, textarea, button { background: #444; color: #fff; border: 1px solid #666; }
     #savingMessage { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3000; background: #444; padding: 10px; border: 1px solid #666; }
   </style>
@@ -68,14 +72,14 @@
   <div id="imageOverlay" onclick="hideOverlay()"></div>
   <div id="layerControls">
     <h3>Capas</h3>
-    <label style="background-color: red"><input type="checkbox" id="fisurasCheck" checked onchange="updateLayers()"> Fisuras</label>
-    <label style="background-color: green"><input type="checkbox" id="limpiezaCheck" checked onchange="updateLayers()"> Limpieza</label>
-    <label style="background-color: yellow"><input type="checkbox" id="trapitosCheck" checked onchange="updateLayers()"> Trapitos</label>
-    <label style="background-color: purple"><input type="checkbox" id="narcomenudeoCheck" checked onchange="updateLayers()"> Narcomenudeo</label>
-    <label style="background-color: orange"><input type="checkbox" id="casas-tomadasCheck" checked onchange="updateLayers()"> Casas Tomadas</label>
-    <label style="background-color: pink"><input type="checkbox" id="comercios-fisurasCheck" checked onchange="updateLayers()"> Comercios Fisuras</label>
-    <label style="background-color: gray"><input type="checkbox" id="via-publicaCheck" checked onchange="updateLayers()"> Vía Pública</label>
-    <label style="background-color: blue"><input type="checkbox" id="comisariasCheck" checked onchange="updateLayers()"> Comisarías</label>
+    <label style="background-color: red" for="fisurasCheck"><input type="checkbox" id="fisurasCheck" checked onchange="updateLayers()"> Fisuras</label>
+    <label style="background-color: green" for="limpiezaCheck"><input type="checkbox" id="limpiezaCheck" checked onchange="updateLayers()"> Limpieza</label>
+    <label style="background-color: yellow" for="trapitosCheck"><input type="checkbox" id="trapitosCheck" checked onchange="updateLayers()"> Trapitos</label>
+    <label style="background-color: purple" for="narcomenudeoCheck"><input type="checkbox" id="narcomenudeoCheck" checked onchange="updateLayers()"> Narcomenudeo</label>
+    <label style="background-color: orange" for="casas-tomadasCheck"><input type="checkbox" id="casas-tomadasCheck" checked onchange="updateLayers()"> Casas Tomadas</label>
+    <label style="background-color: pink" for="comercios-fisurasCheck"><input type="checkbox" id="comercios-fisurasCheck" checked onchange="updateLayers()"> Comercios Fisuras</label>
+    <label style="background-color: gray" for="via-publicaCheck"><input type="checkbox" id="via-publicaCheck" checked onchange="updateLayers()"> Vía Pública</label>
+    <label style="background-color: blue" for="comisariasCheck"><input type="checkbox" id="comisariasCheck" checked onchange="updateLayers()"> Comisarías</label>
     <button onclick="selectAllLayers()">Ver todo</button>
     <button onclick="deselectAllLayers()">Ninguna</button>
   </div>
@@ -130,8 +134,16 @@
       });
     });
 
-    function createPopupContent(title, user, description) {
-      return `<b>${title}</b><br>Usuario: ${user}<br>Descripción: ${description || 'Sin descripción'}`;
+    function createPopupContent(title, user, description, address, layer) {
+      const isLightBackground = ['yellow', 'pink'].includes(layersConfig[layer].color);
+      return `
+        <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${layersConfig[layer].color}">
+          <b>${title}</b>
+          <div><b>Usuario:</b> ${user}</div>
+          <div><b>Descripción:</b> ${description || 'Sin descripción'}</div>
+          <div><b>Dirección:</b> ${address || 'Sin dirección'}</div>
+        </div>
+      `;
     }
 
     function showDetails(imageUrls, layer) {
@@ -194,10 +206,10 @@
               return L.marker(latlng, { icon: icons[layer] });
             },
             onEachFeature: (feature, layerFeature) => {
-              const { name, description, user } = feature.properties;
+              const { name, description, user, address } = feature.properties;
               const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
               const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
-              layerFeature.bindPopup(createPopupContent(name, user, cleanDescription), { className: 'custom-popup' });
+              layerFeature.bindPopup(createPopupContent(name, user, cleanDescription, address, layer), { className: '' });
               layerFeature.on('click', (e) => {
                 showDetails(imageUrls, layer);
                 L.DomEvent.stopPropagation(e);
@@ -215,10 +227,10 @@
                 return L.marker(latlng, { icon: icons[layer] });
               },
               onEachFeature: (feature, layerFeature) => {
-                const { name, description, user } = feature.properties;
+                const { name, description, user, address } = feature.properties;
                 const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
                 const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
-                layerFeature.bindPopup(createPopupContent(name, user, cleanDescription), { className: 'custom-popup' });
+                layerFeature.bindPopup(createPopupContent(name, user, cleanDescription, address, layer), { className: '' });
                 layerFeature.on('click', (e) => {
                   showDetails(imageUrls, layer);
                   L.DomEvent.stopPropagation(e);
@@ -291,6 +303,7 @@
             const selectedLayer = document.getElementById('layerSelect').value;
             currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
             map.setView([latitude, longitude], 15);
+            document.getElementById('addressInput').value = `Lat: ${latitude}, Lon: ${longitude}`;
           },
           (error) => {
             console.error('Error en ubicación actual:', error);
@@ -367,6 +380,7 @@
       const user = document.getElementById('userInput').value || 'Anónimo';
       const title = document.getElementById('titleInput').value;
       const description = document.getElementById('descriptionInput').value;
+      const address = document.getElementById('addressInput').value;
       const photoInput = document.getElementById('photoInput');
       const files = photoInput.files;
 
@@ -437,7 +451,8 @@
         properties: {
           name: title,
           description: `${description} ${imageUrls.map(url => `{{${url}}}`).join(' ')}`,
-          user
+          user,
+          address: address || 'Sin dirección'
         }
       };
 
@@ -454,7 +469,7 @@
 
         const marker = L.marker([latitude, longitude], { icon: icons[layer] });
         const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
-        marker.bindPopup(createPopupContent(title, user, cleanDescription), { className: 'custom-popup' });
+        marker.bindPopup(createPopupContent(title, user, cleanDescription, address, layer), { className: '' });
         marker.on('click', (e) => {
           showDetails(imageUrls, layer);
           L.DomEvent.stopPropagation(e);
