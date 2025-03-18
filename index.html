@@ -282,21 +282,23 @@
   <div id="layerControls">
     <h3>Capas</h3>
     <label style="background-color: red" for="fisurasCheck"><input type="checkbox" id="fisurasCheck" checked
-        onchange="updateLayers()"> Fisuras</label>
+        onchange="updateLayers()"> Fisuras <span id="fisurasCount">(0)</span></label>
+
     <label style="background-color: green" for="limpiezaCheck"><input type="checkbox" id="limpiezaCheck" checked
-        onchange="updateLayers()"> Limpieza</label>
+        onchange="updateLayers()"> Limpieza <span id="limpiezaCount">(0)</span></label>
     <label style="background-color: yellow" for="trapitosCheck"><input type="checkbox" id="trapitosCheck" checked
-        onchange="updateLayers()"> Trapitos</label>
+        onchange="updateLayers()"> Trapitos <span id="trapitosCount">(0)</span></label>
     <label style="background-color: purple" for="narcomenudeoCheck"><input type="checkbox" id="narcomenudeoCheck"
-        checked onchange="updateLayers()"> Narcomenudeo</label>
+        checked onchange="updateLayers()"> Narcomenudeo <span id="narcomenudeoCount">(0)</span></label>
     <label style="background-color: orange" for="casas-tomadasCheck"><input type="checkbox" id="casas-tomadasCheck"
-        checked onchange="updateLayers()"> Casas Tomadas</label>
+        checked onchange="updateLayers()"> Casas Tomadas <span id="casas-tomadasCount">(0)</span></label>
     <label style="background-color: pink" for="comercios-fisurasCheck"><input type="checkbox"
-        id="comercios-fisurasCheck" checked onchange="updateLayers()"> Comercios Fisuras</label>
+        id="comercios-fisurasCheck" checked onchange="updateLayers()"> Comercios Fisuras <span
+        id="comercios-fisurasCount">(0)</span></label>
     <label style="background-color: gray" for="via-publicaCheck"><input type="checkbox" id="via-publicaCheck" checked
-        onchange="updateLayers()"> Vía Pública</label>
+        onchange="updateLayers()"> Vía Pública <span id="via-publicaCount">(0)</span></label>
     <label style="background-color: blue" for="comisariasCheck"><input type="checkbox" id="comisariasCheck" checked
-        onchange="updateLayers()"> Comisarías</label>
+        onchange="updateLayers()"> Comisarías <span id="comisariasCount">(0)</span></label>
     <button onclick="selectAllLayers()">Ver todo</button>
     <button onclick="deselectAllLayers()">Ninguna</button>
   </div>
@@ -431,14 +433,15 @@
       for (const layer in layersConfig) {
         const config = layersConfig[layer];
         clusterGroups[layer].clearLayers();
+        let totalPoints = 0;
 
+        // Puntos fijos
         try {
           const fixedResponse = await fetch(`${config.fixedUrl}?t=${timestamp}`);
           const fixedData = await fixedResponse.json();
+          totalPoints += fixedData.features.length;
           L.geoJSON(fixedData, {
-            pointToLayer: (feature, latlng) => {
-              return L.marker(latlng, { icon: icons[layer] });
-            },
+            pointToLayer: (feature, latlng) => L.marker(latlng, { icon: icons[layer] }),
             onEachFeature: (feature, layerFeature) => {
               const { name, description, user, address } = feature.properties;
               const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
@@ -450,16 +453,18 @@
               });
             }
           }).addTo(clusterGroups[layer]);
-        } catch (e) { console.log(`No hay datos fijos para ${layer}`); }
+        } catch (e) {
+          console.log(`No hay datos fijos para ${layer}`);
+        }
 
+        // Puntos temporales
         if (config.tempUrl) {
           try {
             const tempResponse = await fetch(`${config.tempUrl}?t=${timestamp}`);
             const tempData = await tempResponse.json();
+            totalPoints += tempData.features.length;
             L.geoJSON(tempData, {
-              pointToLayer: (feature, latlng) => {
-                return L.marker(latlng, { icon: icons[layer] });
-              },
+              pointToLayer: (feature, latlng) => L.marker(latlng, { icon: icons[layer] }),
               onEachFeature: (feature, layerFeature) => {
                 const { name, description, user, address } = feature.properties;
                 const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
@@ -471,8 +476,13 @@
                 });
               }
             }).addTo(clusterGroups[layer]);
-          } catch (e) { console.log(`No hay datos temporales para ${layer}`); }
+          } catch (e) {
+            console.log(`No hay datos temporales para ${layer}`);
+          }
         }
+
+        // Actualizar el conteo en el panel
+        document.getElementById(`${layer}Count`).textContent = `(${totalPoints})`;
 
         if (document.getElementById(`${layer}Check`).checked) {
           clusterGroups[layer].addTo(map);
@@ -723,10 +733,8 @@
           headers: { 'Content-Type': 'application/json' }
         });
         if (!response.ok) throw new Error('Error al guardar en Gist');
-        const result = await response.json();
 
         const marker = L.marker([latitude, longitude], { icon: icons[layer] });
-        const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
         marker.bindPopup(createPopupContent(title, user, cleanDescription, address, layer), { className: '' });
         marker.on('click', (e) => {
           showDetails(imageUrls, layer);
@@ -736,6 +744,13 @@
         if (!map.hasLayer(clusterGroups[layer])) {
           clusterGroups[layer].addTo(map);
         }
+
+        // Actualizar el conteo
+        const countElement = document.getElementById(`${layer}Count`);
+        const currentCount = parseInt(countElement.textContent.replace(/[()]/g, '')) || 0;
+        countElement.textContent = `(${currentCount + 1})`;
+
+        // ... resto del código ...
 
         alert('Punto enviado con éxito');
         toggleMode(layer);
