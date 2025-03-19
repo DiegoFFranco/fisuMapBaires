@@ -3,12 +3,14 @@ let currentMarker = null;
 let isEditing = false;
 let currentImages = [];
 let currentImageIndex = -1;
+
+// Inicializar el mapa
 const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
-///const iconBase = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-';
+// Definir los íconos
 const iconBase = 'img/marker-icon-2x-';
 const shadowBase = 'img/marker-shadow.png';
 
@@ -23,18 +25,19 @@ const icons = {
   'comisarias': L.icon({ iconUrl: `${iconBase}blue.png`, shadowUrl: shadowBase, iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] })
 };
 
+// Configuración de capas (eliminamos las URLs de Gists porque ahora usamos Firestore)
 const layersConfig = {
-  'fisuras': { color: 'red', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/1cb1d8e5bf02d884ae4dd0cca5c7ca97/raw/fisuras-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/ca1084559d9fc6c5a91a6175d424bd2c/raw/fisuras-temporal.geojson' },
-  'limpieza': { color: 'green', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/2c3d4d9e4a21d504b2c268debc71f8ec/raw/limpieza-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/52640ef61feae0ba47fa5c1b50a4bb03/raw/limpieza-temporal.geojson' },
-  'trapitos': { color: 'yellow', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/3a03f67f71c4a786a77e02272627ca05/raw/trapitos-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/4b5ae0b59d4cbbad161f0234906cb1cd/raw/trapitos-temporal.geojson' },
-  'narcomenudeo': { color: 'purple', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/5efc8ea5b5a449f028a6a52fa198dbb5/raw/narcomenudeo-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/363f43d4842fa35a3357ae2c474a6fff/raw/narcomenudeo-temporal.geojson' },
-  'casas-tomadas': { color: 'orange', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/302f0ad335f67a6e636191a63d7eb14d/raw/casasTomadas-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/9a74c688f462688e1d712989c275d853/raw/casasTomadas-temporal.geojson' },
-  'comercios-fisuras': { color: 'brown', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/b9007a080910fab28432b60de9478e6a/raw/comerciosFisura-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/3a1ca4ff9425fbac6d887aba7e414f98/raw/comercios-fisuras-temporal.geojson' // Sin hash
-  },
-  'via-publica': { color: 'gray', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/daa897ed4fbfba087549e4abea37412c/raw/viaPublica-fija.geojson', tempUrl: 'https://gist.githubusercontent.com/DiegoFFranco/79af8d490561594d4bd4f739ae5e9356/raw/viaPublica-temporal.geojson' },
-  'comisarias': { color: 'blue', fixedUrl: 'https://gist.githubusercontent.com/DiegoFFranco/33d1ed2480106a5f6e044720607b01cc/raw/comisarias.geojson', tempUrl: null }
+  'fisuras': { color: 'red' },
+  'limpieza': { color: 'green' },
+  'trapitos': { color: 'yellow' },
+  'narcomenudeo': { color: 'purple' },
+  'casas-tomadas': { color: 'orange' },
+  'comercios-fisuras': { color: 'brown' },
+  'via-publica': { color: 'gray' },
+  'comisarias': { color: 'blue' }
 };
 
+// Crear los grupos de clusters para cada capa
 const clusterGroups = {};
 Object.keys(layersConfig).forEach(layer => {
   clusterGroups[layer] = L.markerClusterGroup({
@@ -48,20 +51,24 @@ Object.keys(layersConfig).forEach(layer => {
   });
 });
 
-function createPopupContent(title, user, description, address, layer) {
+// Crear el contenido del popup
+function createPopupContent(title, user, description, address, layer, imageUrls) {
   const isLightBackground = ['yellow', 'pink'].includes(layersConfig[layer].color);
   const popupColor = layersConfig[layer].color;
+  // Limpiar la descripción para eliminar URLs de imágenes embebidas
+  const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
   return `
     <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${popupColor};">
       <span class="title">${title}</span>
       <div class="detail"><b>Usuario:</b> ${user}</div>
-      <div class="detail"><b>Descripción:</b> ${description || 'Sin descripción'}</div>
+      <div class="detail"><b>Descripción:</b> ${cleanDescription || 'Sin descripción'}</div>
       <div class="detail"><b>Dirección:</b> ${address || 'Sin dirección'}</div>
     </div>
     <style>.leaflet-popup-tip { background-color: ${popupColor}; }</style>
   `;
 }
 
+// Mostrar detalles de las imágenes
 function showDetails(imageUrls, layer) {
   if (!isEditing) {
     document.getElementById('pointDetails').style.display = 'block';
@@ -76,10 +83,12 @@ function showDetails(imageUrls, layer) {
   }
 }
 
+// Ocultar el overlay de imágenes
 function hideOverlay() {
   document.getElementById('imageOverlay').style.display = 'none';
 }
 
+// Mostrar el overlay de imágenes con navegación
 function showOverlay(url, layer, imageUrls, index) {
   currentImages = imageUrls;
   currentImageIndex = index;
@@ -92,6 +101,7 @@ function showOverlay(url, layer, imageUrls, index) {
   overlay.style.display = 'flex';
 }
 
+// Navegar entre imágenes en el overlay
 function navigateImages(direction, layer) {
   currentImageIndex += direction;
   if (currentImageIndex < 0) currentImageIndex = currentImages.length - 1;
@@ -104,70 +114,63 @@ function navigateImages(direction, layer) {
   `;
 }
 
+// Ocultar los detalles
 function hideDetails() {
   document.getElementById('pointDetails').style.display = 'none';
 }
 
+// Cargar puntos desde Firestore
 async function loadPoints() {
-  const timestamp = Date.now();
   for (const layer in layersConfig) {
-    const config = layersConfig[layer];
-    clusterGroups[layer].clearLayers();
-    let totalPoints = 0;
-
     try {
-      const fixedResponse = await fetch(`${config.fixedUrl}?t=${timestamp}`);
-      const fixedData = await fixedResponse.json();
-      totalPoints += fixedData.features.length;
-      L.geoJSON(fixedData, {
+      const colRef = collection(db, layer);
+      const snapshot = await getDocs(colRef);
+      clusterGroups[layer].clearLayers();
+      let totalPoints = 0;
+
+      const features = snapshot.docs.map(doc => {
+        const data = doc.data();
+        totalPoints++;
+        return {
+          type: data.type,
+          geometry: data.geometry,
+          properties: {
+            ...data.properties,
+            id: doc.id
+          }
+        };
+      });
+
+      const geojson = {
+        type: 'FeatureCollection',
+        features: features
+      };
+
+      L.geoJSON(geojson, {
         pointToLayer: (feature, latlng) => L.marker(latlng, { icon: icons[layer] }),
         onEachFeature: (feature, layerFeature) => {
-          const { name, description, user, address } = feature.properties;
-          const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
-          const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
-          layerFeature.bindPopup(createPopupContent(name, user, cleanDescription, address, layer), { className: '' });
+          const { name, description, user, address, imageUrls } = feature.properties;
+          layerFeature.bindPopup(createPopupContent(name, user, description, address, layer, imageUrls || []), { className: '' });
           layerFeature.on('click', (e) => {
-            showDetails(imageUrls, layer);
+            showDetails(imageUrls || [], layer);
             L.DomEvent.stopPropagation(e);
           });
         }
       }).addTo(clusterGroups[layer]);
-    } catch (e) {
-      console.log(`No hay datos fijos para ${layer}`);
-    }
 
-    if (config.tempUrl) {
-      try {
-        const tempResponse = await fetch(`${config.tempUrl}?t=${timestamp}`);
-        const tempData = await tempResponse.json();
-        totalPoints += tempData.features.length;
-        L.geoJSON(tempData, {
-          pointToLayer: (feature, latlng) => L.marker(latlng, { icon: icons[layer] }),
-          onEachFeature: (feature, layerFeature) => {
-            const { name, description, user, address } = feature.properties;
-            const imageUrls = description.match(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g)?.map(url => url.slice(2, -2)) || [];
-            const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
-            layerFeature.bindPopup(createPopupContent(name, user, cleanDescription, address, layer), { className: '' });
-            layerFeature.on('click', (e) => {
-              showDetails(imageUrls, layer);
-              L.DomEvent.stopPropagation(e);
-            });
-          }
-        }).addTo(clusterGroups[layer]);
-      } catch (e) {
-        console.log(`No hay datos temporales para ${layer}`);
+      document.getElementById(`${layer}Count`).textContent = `(${totalPoints})`;
+      if (document.getElementById(`${layer}Check`).checked) {
+        clusterGroups[layer].addTo(map);
       }
-    }
-
-    document.getElementById(`${layer}Count`).textContent = `(${totalPoints})`;
-
-    if (document.getElementById(`${layer}Check`).checked) {
-      clusterGroups[layer].addTo(map);
+    } catch (error) {
+      console.error(`Error al cargar puntos para ${layer} desde Firestore:`, error);
+      document.getElementById(`${layer}Count`).textContent = `(0)`;
     }
   }
 }
 
-async function enableMapClick() {
+// Habilitar el clic en el mapa para agregar puntos
+function enableMapClick() {
   map.on('click', async (event) => {
     if (isEditing) {
       latitude = event.latlng.lat;
@@ -190,6 +193,7 @@ async function enableMapClick() {
   });
 }
 
+// Deshabilitar el clic en el mapa
 function disableMapClick() {
   map.off('click');
   if (currentMarker) {
@@ -198,6 +202,7 @@ function disableMapClick() {
   }
 }
 
+// Geocodificar una dirección
 async function geocodeAddress() {
   const address = document.getElementById('addressInput').value;
   if (!address) {
@@ -224,6 +229,7 @@ async function geocodeAddress() {
   }
 }
 
+// Obtener la ubicación actual del usuario
 function getCurrentLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
@@ -253,6 +259,7 @@ function getCurrentLocation() {
   }
 }
 
+// Actualizar la capa en modo edición
 function updateEditorLayer() {
   if (isEditing) {
     const selectedLayer = document.getElementById('layerSelect').value;
@@ -270,6 +277,7 @@ function updateEditorLayer() {
   }
 }
 
+// Alternar entre modo visor y edición
 function toggleMode(lastCreatedLayer = null) {
   if (isEditing) {
     isEditing = false;
@@ -311,8 +319,7 @@ function toggleMode(lastCreatedLayer = null) {
   }
 }
 
-document.getElementById('layerSelect').addEventListener('change', updateEditorLayer);
-
+// Guardar un punto en Firestore
 async function submitPoint() {
   const submitBtn = document.getElementById('submitBtn');
   submitBtn.disabled = true;
@@ -377,7 +384,7 @@ async function submitPoint() {
       }
     }
   } else {
-    imageUrls.push('https://i.imgur.com/bLBkpWR.png');
+    imageUrls.push('https://i.imgur.com/bLBkpWR.png'); // Imagen por defecto
   }
 
   const pointData = {
@@ -385,30 +392,23 @@ async function submitPoint() {
     geometry: { type: "Point", coordinates: [longitude, latitude] },
     properties: {
       name: title,
-      description: `${description} ${imageUrls.map(url => `{{${url}}}`).join(' ')}`,
-      user,
-      address: address || 'Sin dirección'
+      description: description,
+      user: user,
+      address: address || 'Sin dirección',
+      imageUrls: imageUrls,
+      timestamp: serverTimestamp()
     }
   };
 
   console.log('Punto enviado:', pointData);
 
   try {
-    const response = await fetch('/.netlify/functions/savePoint', {
-      method: 'POST',
-      body: JSON.stringify({ layer, point: pointData }),
-      headers: { 'Content-Type': 'application/json' }
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(`Error al guardar en Gist: ${result.error || response.statusText}`);
-    }
-    console.log('Respuesta de savePoint:', result); // Para depurar la respuesta
-
-    const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
+    const colRef = collection(db, layer);
+    await addDoc(colRef, pointData);
+    console.log('Punto guardado en Firestore:', pointData);
 
     const marker = L.marker([latitude, longitude], { icon: icons[layer] });
-    marker.bindPopup(createPopupContent(title, user, cleanDescription, address, layer), { className: '' });
+    marker.bindPopup(createPopupContent(title, user, description, address, layer, imageUrls), { className: '' });
     marker.on('click', (e) => {
       showDetails(imageUrls, layer);
       L.DomEvent.stopPropagation(e);
@@ -427,13 +427,14 @@ async function submitPoint() {
     marker.openPopup();
     showDetails(imageUrls, layer);
   } catch (error) {
-    console.error('Error al enviar el punto:', error);
+    console.error('Error al guardar en Firestore:', error);
     alert(`Error al enviar: ${error.message}`);
   }
   submitBtn.disabled = false;
   document.getElementById('savingMessage').style.display = 'none';
 }
 
+// Actualizar las capas visibles
 function updateLayers() {
   Object.keys(clusterGroups).forEach(layer => {
     const checkbox = document.getElementById(`${layer}Check`);
@@ -447,6 +448,7 @@ function updateLayers() {
   });
 }
 
+// Seleccionar todas las capas
 function selectAllLayers() {
   Object.keys(clusterGroups).forEach(layer => {
     const checkbox = document.getElementById(`${layer}Check`);
@@ -455,6 +457,7 @@ function selectAllLayers() {
   });
 }
 
+// Deseleccionar todas las capas
 function deselectAllLayers() {
   Object.keys(clusterGroups).forEach(layer => {
     const checkbox = document.getElementById(`${layer}Check`);
@@ -464,5 +467,9 @@ function deselectAllLayers() {
   hideDetails();
 }
 
+// Escuchar cambios en el selector de capas
+document.getElementById('layerSelect').addEventListener('change', updateEditorLayer);
+
+// Inicializar la carga de puntos y habilitar el clic en el mapa
 loadPoints();
 enableMapClick();
