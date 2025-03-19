@@ -476,6 +476,7 @@ document.getElementById('layerSelect').addEventListener('change', updateEditorLa
 
 // Agregar evento al botón de agregar punto
 document.getElementById('addPointBtn').addEventListener('click', toggleMode);
+document.getElementById('submitBtn').addEventListener('click', submitPoint);
 
 // Inicializar la carga de puntos y habilitar el clic en el mapa
 loadPoints();
