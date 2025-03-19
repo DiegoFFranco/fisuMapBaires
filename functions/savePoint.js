@@ -17,6 +17,7 @@ exports.handler = async (event) => {
     }[layer];
     if (!gistId) throw new Error(`Layer no válido: ${layer}`);
 
+    console.log(`Obteniendo Gist ${gistId} para ${layer}`);
     const gistResponse = await fetch(`https://api.github.com/gists/${gistId}`, {
       headers: { Authorization: `token ${GITHUB_TOKEN}` }
     });
@@ -25,9 +26,12 @@ exports.handler = async (event) => {
     const gistData = await gistResponse.json();
     const fileContent = gistData.files?.[`${layer}-temporal.geojson`]?.content;
     const currentGeoJSON = JSON.parse(fileContent || '{"type":"FeatureCollection","features":[]}');
+    console.log(`Puntos actuales en ${layer}: ${currentGeoJSON.features.length}`);
 
     currentGeoJSON.features.push(point);
+    console.log(`Puntos después de agregar: ${currentGeoJSON.features.length}`);
 
+    console.log(`Actualizando Gist ${gistId}`);
     const updateResponse = await fetch(`https://api.github.com/gists/${gistId}`, {
       method: 'PATCH',
       headers: { Authorization: `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
@@ -35,7 +39,9 @@ exports.handler = async (event) => {
         files: { [`${layer}-temporal.geojson`]: { content: JSON.stringify(currentGeoJSON, null, 2) } }
       })
     });
-    if (!updateResponse.ok) throw new Error(`Error al actualizar Gist: ${updateResponse.status}`);
+    const updateResult = await updateResponse.json();
+    console.log(`Respuesta de actualización: ${JSON.stringify(updateResult)}`);
+    if (!updateResponse.ok) throw new Error(`Error al actualizar Gist: ${updateResponse.status} - ${updateResult.message}`);
 
     return { statusCode: 200, body: JSON.stringify({ message: 'Punto guardado' }) };
   } catch (error) {
