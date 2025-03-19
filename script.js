@@ -25,7 +25,7 @@ const icons = {
   'comisarias': L.icon({ iconUrl: `${iconBase}blue.png`, shadowUrl: shadowBase, iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] })
 };
 
-// Configuración de capas (eliminamos las URLs de Gists porque ahora usamos Firestore)
+// Configuración de capas
 const layersConfig = {
   'fisuras': { color: 'red' },
   'limpieza': { color: 'green' },
@@ -55,8 +55,7 @@ Object.keys(layersConfig).forEach(layer => {
 function createPopupContent(title, user, description, address, layer, imageUrls) {
   const isLightBackground = ['yellow', 'pink'].includes(layersConfig[layer].color);
   const popupColor = layersConfig[layer].color;
-  // Limpiar la descripción para eliminar URLs de imágenes embebidas
-  const cleanDescription = description.replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
+  const cleanDescription = (description || '').replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
   return `
     <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${popupColor};">
       <span class="title">${title}</span>
@@ -132,10 +131,14 @@ async function loadPoints() {
         const data = doc.data();
         totalPoints++;
         return {
-          type: data.type,
-          geometry: data.geometry,
+          type: data.type || 'Feature',
+          geometry: data.geometry || { type: 'Point', coordinates: [0, 0] },
           properties: {
-            ...data.properties,
+            name: data.properties?.name || data.name || 'Sin título',
+            description: data.properties?.description || data.description || '',
+            user: data.properties?.user || data.user || 'Anónimo',
+            address: data.properties?.address || data.address || 'Sin dirección',
+            imageUrls: data.properties?.imageUrls || data.imageUrls || [],
             id: doc.id
           }
         };
@@ -279,6 +282,7 @@ function updateEditorLayer() {
 
 // Alternar entre modo visor y edición
 function toggleMode(lastCreatedLayer = null) {
+  console.log('Entrando a toggleMode, isEditing:', isEditing);
   if (isEditing) {
     isEditing = false;
     document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Visor';
@@ -469,6 +473,9 @@ function deselectAllLayers() {
 
 // Escuchar cambios en el selector de capas
 document.getElementById('layerSelect').addEventListener('change', updateEditorLayer);
+
+// Agregar evento al botón de agregar punto
+document.getElementById('addPointBtn').addEventListener('click', toggleMode);
 
 // Inicializar la carga de puntos y habilitar el clic en el mapa
 loadPoints();
