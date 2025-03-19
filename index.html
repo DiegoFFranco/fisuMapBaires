@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h2 id="modeTitle">fisuMapBaiires - Modo Visor</h2>
+  <h2 id="modeTitle">fisuMapBaiiiires - Modo Visor</h2>
   <button id="addPointBtn" onclick="toggleMode()">Agregar Punto</button>
   <div id="mapContainer"></div>
   <div id="pointForm">
@@ -59,6 +59,31 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  <script src="script.js"></script>
+
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+  
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzlFKmifVj7WiNaYXlB-PPKRhz-dr9HRk",
+      authDomain: "fisumapbaires.firebaseapp.com",
+      projectId: "fisumapbaires",
+      storageBucket: "fisumapbaires.firebasestorage.app",
+      messagingSenderId: "575806613608",
+      appId: "1:575806613608:web:4c14b7ff34c596a795f3dd"
+    };
+  
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.db = db;
+    window.collection = collection;
+    window.getDocs = getDocs;
+    window.addDoc = addDoc;
+    window.serverTimestamp = serverTimestamp;
+  </script>
+
+  <script type="module" src="script.js"></script>
+  
 </body>
 </html>
