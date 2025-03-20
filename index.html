@@ -42,8 +42,9 @@
     <!-- Sección de horarios (inicialmente oculta) -->
     <div id="horariosSection" style="display: none;">
       <h4>Horarios (solo Comercios Fisuras)</h4>
-      <label>
-        <input type="checkbox" id="sameSchedule" onchange="toggleScheduleFields()">Todos los días mismo horario</label>
+      <label for="sameSchedule">
+        <input type="checkbox" id="sameSchedule" onchange="toggleScheduleFields()"> Todos los días mismo horario
+      </label>
       <div id="sameScheduleFields" style="display: none;">
         <div class="schedule-row">
           <input type="time" id="sameApertura">
@@ -60,13 +61,19 @@
           <span>Sábado:</span>
           <input type="time" id="sabApertura">
           <input type="time" id="sabCierre">
-          <label><input type="checkbox" id="sabCerrado" onchange="toggleSabadoFields()"> Cerrado</label>
+          <label for="sabCerrado" class="cerrado-label">
+            <input type="checkbox" id="sabCerrado" onchange="toggleSabadoFields()">
+            <span class="cerrado-text">Cerrado</span>
+          </label>
         </div>
         <div class="schedule-row">
           <span>Domingo:</span>
           <input type="time" id="domApertura">
           <input type="time" id="domCierre">
-          <label><input type="checkbox" id="domCerrado" onchange="toggleDomingoFields()"> Cerrado</label>
+          <label for="domCerrado" class="cerrado-label">
+            <input type="checkbox" id="domCerrado" onchange="toggleDomingoFields()">
+            <span class="cerrado-text">Cerrado</span>
+          </label>
         </div>
       </div>
     </div>
@@ -96,8 +103,10 @@
         onchange="updateLayers()"> Vía Pública <span id="via-publicaCount">(0)</span></label>
     <label style="background-color: blue" for="comisariasCheck"><input type="checkbox" id="comisariasCheck" checked
         onchange="updateLayers()"> Comisarías <span id="comisariasCount">(0)</span></label>
-    <button onclick="selectAllLayers()">Ver todo</button>
-    <button onclick="deselectAllLayers()">Ninguna</button>
+        <div class="button-container">
+          <button onclick="selectAllLayers()">Ver todo</button>
+          <button onclick="deselectAllLayers()">Ninguna</button>
+        </div>
   </div>
   <div id="savingMessage">Guardando punto, por favor esperá...</div>
 

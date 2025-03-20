@@ -47,11 +47,16 @@ body {
   #pointForm label[for="sameSchedule"] {
     display: flex;
     align-items: center;
-    margin-bottom: 10px;
+    margin: 5px 6px;
+    white-space: nowrap;
+    line-height: 1;
+    height: 31px;
   }
   
   #pointForm label[for="sameSchedule"] input[type="checkbox"] {
-    margin-right: 8px;
+    margin: 0 8px 0 0;
+    height: 15px;
+    width: 40px;    
   }
   
   #pointForm input,
@@ -133,7 +138,7 @@ body {
     right: 10px;
   }
   
-  #layerControls {
+  #layerControls {    
     position: absolute;
     top: 50px;
     right: 10px;
@@ -165,6 +170,25 @@ body {
     color: #000;
   }
 
+  #layerControls .button-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  #layerControls .button-container button {
+    font-weight: bold;
+  }
+
+  #addPointBtn {
+    font-weight: bold;
+  }
+  
+  #pointForm #submitBtn {
+    font-weight: bold;
+  }
+  
   .custom-popup {
     max-width: 300px;
     padding: 10px;
@@ -252,29 +276,59 @@ body {
   }
   
   #horariosSection h4 {
-    margin: 5px 0;
+    margin: 5px 12px;
+  }
+
+  #horariosSection .schedule-row input[type="time"] {
+    width: 67px !important;
+    height: 20px !important;
+    margin-right: 10px;
+    padding: 2px;
+    font-size: 12px;
+    line-height: 20px;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
   }
   
   .schedule-row {
     display: flex;
-    align-items: center;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
+    height: 42px;
   }
   
   .schedule-row span {
-    width: 80px;
+    width: 60px;
     margin-right: 10px;
+    text-align: right;
   }
   
   .schedule-row input[type="time"] {
-    width: 67px;
-    height: 20px;
+    width: 67px !important;
+    height: 20px !important;
     margin-right: 10px;
     padding: 2px;
     font-size: 12px;
+    line-height: 20px;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
   }
   
-  .schedule-row label {
+  .schedule-row .cerrado-label {
+    display: flex;
+    align-items: center;
     margin-left: 10px;
     font-weight: normal;
+    line-height: 1;
+  }
+  
+  .schedule-row .cerrado-label input[type="checkbox"] {
+    margin: 0 5px 0 0;
+  }
+  
+  .schedule-row .cerrado-label .cerrado-text {
+    margin-left: 5px;
   }
