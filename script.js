@@ -425,18 +425,6 @@ async function submitPoint() {
 
   let imageUrls = [];
   if (files.length > 0) {
-    // Obtener las variables de entorno desde la Netlify Function
-    let env;
-    try {
-      env = await window.loadEnv();
-    } catch (error) {
-      console.error('Error al cargar las variables de entorno:', error);
-      alert('Error al cargar las variables de entorno. Por favor, intentá de nuevo.');
-      submitBtn.disabled = false;
-      document.getElementById('savingMessage').style.display = 'none';
-      return;
-    }
-
     for (const file of files) {
       const validTypes = ['image/jpeg', 'image/png'];
       if (!validTypes.includes(file.type)) {
@@ -445,23 +433,33 @@ async function submitPoint() {
         document.getElementById('savingMessage').style.display = 'none';
         return;
       }
-      const formData = new FormData();
-      formData.append('image', file);
+
+      // Convertir la imagen a base64
+      const reader = new FileReader();
+      const base64Promise = new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
       try {
-        const response = await fetch('https://api.imgur.com/3/image', {
+        const base64Image = await base64Promise;
+        const response = await fetch('/.netlify/functions/upload-to-imgur', {
           method: 'POST',
-          headers: { Authorization: `Client-ID ${env.IMGUR_CLIENT_ID}` },
-          body: formData
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ image: base64Image })
         });
-        if (!response.ok) throw new Error(`Error en Imgur: ${response.status}`);
+
         const data = await response.json();
-        if (data.success) {
-          imageUrls.push(data.data.link);
-        } else {
-          throw new Error('Error al subir la imagen a Imgur');
+        if (!response.ok) {
+          throw new Error(data.error || 'Error al subir la imagen');
         }
+
+        imageUrls.push(data.imageUrl);
       } catch (e) {
-        console.error('Error en Imgur:', e);
+        console.error('Error al subir a Imgur:', e);
         alert(`Error subiendo una foto: ${e.message}. Revisá los formatos e intentá de nuevo.`);
         submitBtn.disabled = false;
         document.getElementById('savingMessage').style.display = 'none';
