@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administración de Puntos - fisuMapBaires</title>
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    button {
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Administración de Puntos</h1>
+  
+  <h2>Puntos Temporales</h2>
+  <label>Filtrar por categoría: 
+    <select id="categoryFilter" onchange="loadPendingPoints()">
+      <option value="">Todas</option>
+      <option value="fisuras">Fisuras</option>
+      <option value="limpieza">Limpieza</option>
+      <option value="trapitos">Trapitos</option>
+      <option value="narcomenudeo">Narcomenudeo</option>
+      <option value="casas-tomadas">Casas Tomadas</option>
+      <option value="comercios-fisuras">Comercios Fisuras</option>
+      <option value="via-publica">Vía Pública</option>
+      <option value="comisarias">Comisarías</option>
+    </select>
+  </label>
+  <table id="pendingPointsTable">
+    <thead>
+      <tr>
+        <th>Categoría</th>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Dirección</th>
+        <th>Fotos</th>
+        <th>Usuario</th>
+        <th>Timestamp</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="pendingPointsBody"></tbody>
+  </table>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getFirestore, collection, getDocs, updateDoc, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzlFKmifVj7WiNaYXlB-PPKRhz-dr9HRk",
+      authDomain: "fisumapbaires.firebaseapp.com",
+      projectId: "fisumapbaires",
+      storageBucket: "fisumapbaires.firebasestorage.app",
+      messagingSenderId: "575806613608",
+      appId: "1:575806613608:web:4c14b7ff34c596a795f3dd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Cargar puntos temporales de la colección 'points'
+    async function loadPendingPoints() {
+      const categoryFilter = document.getElementById('categoryFilter').value;
+      const tbody = document.getElementById('pendingPointsBody');
+      tbody.innerHTML = '';
+
+      try {
+        const snapshot = await getDocs(collection(db, 'points'));
+        snapshot.forEach(doc => {
+          const point = doc.data();
+          const props = point.properties;
+          if (props.status !== 'temporal') return; // Solo mostrar puntos temporales
+          if (categoryFilter && props.category !== categoryFilter) return; // Filtrar por categoría
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${props.category}</td>
+            <td>${props.name}</td>
+            <td>${props.description}</td>
+            <td>${props.address}</td>
+            <td>${props.imageUrls.map(url => `<a href="${url}" target="_blank">Ver</a>`).join(', ')}</td>
+            <td>${props.user} (${props.userId})</td>
+            <td>${props.timestamp?.toDate().toISOString() || 'N/A'}</td>
+            <td>
+              <button onclick="verifyPoint('${doc.id}')">Verificar</button>
+              <button onclick="deletePoint('${doc.id}')">Borrar</button>
+              <button onclick="editPoint('${doc.id}', ${JSON.stringify(point)})">Editar</button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Error al cargar los puntos temporales:', error);
+      }
+    }
+
+    // Verificar un punto
+    async function verifyPoint(docId) {
+      try {
+        await updateDoc(doc(db, 'points', docId), {
+          'properties.status': 'verificado'
+        });
+        alert('Punto verificado');
+        loadPendingPoints();
+      } catch (error) {
+        console.error('Error al verificar el punto:', error);
+        alert('Error al verificar el punto');
+      }
+    }
+
+    // Borrar un punto
+    async function deletePoint(docId) {
+      if (confirm('¿Estás seguro de que querés borrar este punto?')) {
+        try {
+          await deleteDoc(doc(db, 'points', docId));
+          alert('Punto borrado');
+          loadPendingPoints();
+        } catch (error) {
+          console.error('Error al borrar el punto:', error);
+          alert('Error al borrar el punto');
+        }
+      }
+    }
+
+    // Editar un punto (por ahora solo muestra los datos, lo implementaremos después)
+    function editPoint(docId, point) {
+      alert('Funcionalidad de edición pendiente. Datos del punto: ' + JSON.stringify(point));
+      // Aquí implementaremos el formulario de edición en el futuro
+    }
+
+    // Cargar los puntos al iniciar
+    loadPendingPoints();
+  </script>
+</body>
+</html>

@@ -52,19 +52,31 @@ Object.keys(layersConfig).forEach(layer => {
 });
 
 // Crear el contenido del popup
-function createPopupContent(title, user, description, address, layer, imageUrls) {
+function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios) {
   const isLightBackground = ['yellow', 'pink'].includes(layersConfig[layer].color);
   const popupColor = layersConfig[layer].color;
   const cleanDescription = (description || '').replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
-  return `
+  let popupContent = `
     <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${popupColor};">
       <span class="title">${title}</span>
       <div class="detail"><b>Usuario:</b> ${user}</div>
       <div class="detail"><b>Descripción:</b> ${cleanDescription || 'Sin descripción'}</div>
       <div class="detail"><b>Dirección:</b> ${address || 'Sin dirección'}</div>
-    </div>
-    <style>.leaflet-popup-tip { background-color: ${popupColor}; }</style>
+      <div class="detail"><b>Estado:</b> ${status}</div>
   `;
+
+  // Agregar horarios si es comercios-fisuras
+  if (layer === 'comercios-fisuras' && horarios) {
+    popupContent += `
+      <div class="detail"><b>Horarios:</b><br>
+      - Lunes a Viernes: ${horarios.lunesAViernes.apertura || 'Cerrado'} - ${horarios.lunesAViernes.cierre || ''}<br>
+      - Sábado: ${horarios.sabado.apertura || 'Cerrado'} - ${horarios.sabado.cierre || ''}<br>
+      - Domingo: ${horarios.domingo.apertura || 'Cerrado'} - ${horarios.domingo.cierre || ''}</div>
+    `;
+  }
+
+  popupContent += `</div><style>.leaflet-popup-tip { background-color: ${popupColor}; }</style>`;
+  return popupContent;
 }
 
 // Mostrar detalles de las imágenes
@@ -118,57 +130,84 @@ function hideDetails() {
   document.getElementById('pointDetails').style.display = 'none';
 }
 
-// Cargar puntos desde Firestore
+// Cargar puntos desde Firestore (usando una sola colección 'points')
 async function loadPoints() {
-  for (const layer in layersConfig) {
-    try {
-      const colRef = collection(db, layer);
-      const snapshot = await getDocs(colRef);
-      clusterGroups[layer].clearLayers();
-      let totalPoints = 0;
+  // Limpiar todos los clusters
+  Object.keys(clusterGroups).forEach(layer => {
+    clusterGroups[layer].clearLayers();
+    document.getElementById(`${layer}Count`).textContent = `(0)`; // Resetear conteos
+  });
 
-      const features = snapshot.docs.map(doc => {
-        const data = doc.data();
-        totalPoints++;
-        return {
-          type: data.type || 'Feature',
-          geometry: data.geometry || { type: 'Point', coordinates: [0, 0] },
-          properties: {
-            name: data.properties?.name || data.name || 'Sin título',
-            description: data.properties?.description || data.description || '',
-            user: data.properties?.user || data.user || 'Anónimo',
-            address: data.properties?.address || data.address || 'Sin dirección',
-            imageUrls: data.properties?.imageUrls || data.imageUrls || [],
-            id: doc.id
-          }
-        };
-      });
+  try {
+    const colRef = collection(db, 'points');
+    const snapshot = await getDocs(colRef);
+    const counts = {
+      'fisuras': 0,
+      'limpieza': 0,
+      'trapitos': 0,
+      'narcomenudeo': 0,
+      'casas-tomadas': 0,
+      'comercios-fisuras': 0,
+      'via-publica': 0,
+      'comisarias': 0
+    };
 
-      const geojson = {
-        type: 'FeatureCollection',
-        features: features
-      };
+    const features = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const category = data.properties?.category || 'fisuras'; // Por defecto 'fisuras' si no tiene categoría
+      counts[category]++; // Incrementar el conteo para la categoría
 
-      L.geoJSON(geojson, {
-        pointToLayer: (feature, latlng) => L.marker(latlng, { icon: icons[layer] }),
-        onEachFeature: (feature, layerFeature) => {
-          const { name, description, user, address, imageUrls } = feature.properties;
-          layerFeature.bindPopup(createPopupContent(name, user, description, address, layer, imageUrls || []), { className: '' });
-          layerFeature.on('click', (e) => {
-            showDetails(imageUrls || [], layer);
-            L.DomEvent.stopPropagation(e);
-          });
+      return {
+        type: data.type || 'Feature',
+        geometry: data.geometry || { type: 'Point', coordinates: [0, 0] },
+        properties: {
+          name: data.properties?.name || data.name || 'Sin título',
+          description: data.properties?.description || data.description || '',
+          user: data.properties?.user || data.user || 'Anónimo',
+          address: data.properties?.address || data.address || 'Sin dirección',
+          imageUrls: data.properties?.imageUrls || data.imageUrls || [],
+          category: category,
+          status: data.properties?.status || 'verificado', // Por defecto verificado para puntos antiguos
+          horarios: data.properties?.horarios || {}, // Por defecto {} para puntos que no tienen horarios
+          id: doc.id
         }
-      }).addTo(clusterGroups[layer]);
+      };
+    });
 
-      document.getElementById(`${layer}Count`).textContent = `(${totalPoints})`;
+    const geojson = {
+      type: 'FeatureCollection',
+      features: features
+    };
+
+    L.geoJSON(geojson, {
+      pointToLayer: (feature, latlng) => {
+        const category = feature.properties.category;
+        return L.marker(latlng, { icon: icons[category] });
+      },
+      onEachFeature: (feature, layerFeature) => {
+        const { name, description, user, address, imageUrls, category, status, horarios } = feature.properties;
+        layerFeature.bindPopup(createPopupContent(name, user, description, address, category, imageUrls || [], status, horarios), { className: '' });
+        layerFeature.on('click', (e) => {
+          showDetails(imageUrls || [], category);
+          L.DomEvent.stopPropagation(e);
+        });
+        // Agregar el marcador al cluster correspondiente
+        clusterGroups[category].addLayer(layerFeature);
+      }
+    });
+
+    // Actualizar los conteos
+    Object.keys(counts).forEach(layer => {
+      document.getElementById(`${layer}Count`).textContent = `(${counts[layer]})`;
       if (document.getElementById(`${layer}Check`).checked) {
         clusterGroups[layer].addTo(map);
       }
-    } catch (error) {
-      console.error(`Error al cargar puntos para ${layer} desde Firestore:`, error);
+    });
+  } catch (error) {
+    console.error('Error al cargar puntos desde Firestore:', error);
+    Object.keys(clusterGroups).forEach(layer => {
       document.getElementById(`${layer}Count`).textContent = `(0)`;
-    }
+    });
   }
 }
 
@@ -277,6 +316,14 @@ function updateEditorLayer() {
       map.removeLayer(currentMarker);
       currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
     }
+
+    // Mostrar/ocultar la sección de horarios según la categoría
+    const horariosSection = document.getElementById('horariosSection');
+    if (selectedLayer === 'comercios-fisuras') {
+      horariosSection.style.display = 'block';
+    } else {
+      horariosSection.style.display = 'none';
+    }
   }
 }
 
@@ -323,13 +370,13 @@ function toggleMode(lastCreatedLayer = null) {
   }
 }
 
-// Guardar un punto en Firestore
+// Guardar un punto en Firestore (usando una sola colección 'points')
 async function submitPoint() {
   const submitBtn = document.getElementById('submitBtn');
   submitBtn.disabled = true;
   document.getElementById('savingMessage').style.display = 'block';
 
-  const layer = document.getElementById('layerSelect').value;
+  const category = document.getElementById('layerSelect').value;
   const user = document.getElementById('userInput').value || 'Anónimo';
   const title = document.getElementById('titleInput').value;
   const description = document.getElementById('descriptionInput').value;
@@ -391,6 +438,36 @@ async function submitPoint() {
     imageUrls.push('https://i.imgur.com/bLBkpWR.png'); // Imagen por defecto
   }
 
+  // Construir el objeto horarios si la categoría es comercios-fisuras
+  let horarios = {};
+  if (category === 'comercios-fisuras') {
+    const sameSchedule = document.getElementById('sameSchedule').checked;
+    
+    if (sameSchedule) {
+      const apertura = document.getElementById('sameApertura').value;
+      const cierre = document.getElementById('sameCierre').value;
+      horarios = {
+        lunesAViernes: { apertura, cierre },
+        sabado: { apertura, cierre },
+        domingo: { apertura, cierre }
+      };
+    } else {
+      const lvApertura = document.getElementById('lvApertura').value;
+      const lvCierre = document.getElementById('lvCierre').value;
+      const sabApertura = document.getElementById('sabApertura').value;
+      const sabCierre = document.getElementById('sabCierre').value;
+      const domCerrado = document.getElementById('domCerrado').checked;
+      const domApertura = domCerrado ? '' : document.getElementById('domApertura').value;
+      const domCierre = domCerrado ? '' : document.getElementById('domCierre').value;
+      
+      horarios = {
+        lunesAViernes: { apertura: lvApertura, cierre: lvCierre },
+        sabado: { apertura: sabApertura, cierre: sabCierre },
+        domingo: { apertura: domApertura, cierre: domCierre }
+      };
+    }
+  }
+
   const pointData = {
     type: "Feature",
     geometry: { type: "Point", coordinates: [longitude, latitude] },
@@ -398,38 +475,42 @@ async function submitPoint() {
       name: title,
       description: description,
       user: user,
+      userId: 'user123', // Sin autenticación por ahora
       address: address || 'Sin dirección',
       imageUrls: imageUrls,
-      timestamp: serverTimestamp()
+      timestamp: serverTimestamp(),
+      category: category, // Agregamos el campo category
+      status: 'temporal', // Agregamos el campo status
+      horarios: horarios // Incluimos horarios (será {} si no es comercios-fisuras)
     }
   };
 
   console.log('Punto enviado:', pointData);
 
   try {
-    const colRef = collection(db, layer);
+    const colRef = collection(db, 'points'); // Guardamos en la colección 'points'
     await addDoc(colRef, pointData);
     console.log('Punto guardado en Firestore:', pointData);
 
-    const marker = L.marker([latitude, longitude], { icon: icons[layer] });
-    marker.bindPopup(createPopupContent(title, user, description, address, layer, imageUrls), { className: '' });
+    const marker = L.marker([latitude, longitude], { icon: icons[category] });
+    marker.bindPopup(createPopupContent(title, user, description, address, category, imageUrls, 'temporal', horarios), { className: '' });
     marker.on('click', (e) => {
-      showDetails(imageUrls, layer);
+      showDetails(imageUrls, category);
       L.DomEvent.stopPropagation(e);
     });
-    clusterGroups[layer].addLayer(marker);
-    if (!map.hasLayer(clusterGroups[layer])) {
-      clusterGroups[layer].addTo(map);
+    clusterGroups[category].addLayer(marker);
+    if (!map.hasLayer(clusterGroups[category])) {
+      clusterGroups[category].addTo(map);
     }
 
-    const countElement = document.getElementById(`${layer}Count`);
+    const countElement = document.getElementById(`${category}Count`);
     const currentCount = parseInt(countElement.textContent.replace(/[()]/g, '')) || 0;
     countElement.textContent = `(${currentCount + 1})`;
 
     alert('Punto enviado con éxito');
-    toggleMode(layer);
+    toggleMode(category);
     marker.openPopup();
-    showDetails(imageUrls, layer);
+    showDetails(imageUrls, category);
   } catch (error) {
     console.error('Error al guardar en Firestore:', error);
     alert(`Error al enviar: ${error.message}`);
@@ -469,6 +550,38 @@ function deselectAllLayers() {
     map.removeLayer(clusterGroups[layer]);
   });
   hideDetails();
+}
+
+// Mostrar/ocultar campos de horarios según el checkbox "Mismo horario"
+function toggleScheduleFields() {
+  const sameSchedule = document.getElementById('sameSchedule').checked;
+  const sameScheduleFields = document.getElementById('sameScheduleFields');
+  const differentScheduleFields = document.getElementById('differentScheduleFields');
+  
+  if (sameSchedule) {
+    sameScheduleFields.style.display = 'block';
+    differentScheduleFields.style.display = 'none';
+  } else {
+    sameScheduleFields.style.display = 'none';
+    differentScheduleFields.style.display = 'block';
+  }
+}
+
+// Deshabilitar campos de domingo si está marcado como "Cerrado"
+function toggleDomingoFields() {
+  const domCerrado = document.getElementById('domCerrado').checked;
+  const domApertura = document.getElementById('domApertura');
+  const domCierre = document.getElementById('domCierre');
+  
+  if (domCerrado) {
+    domApertura.disabled = true;
+    domCierre.disabled = true;
+    domApertura.value = '';
+    domCierre.value = '';
+  } else {
+    domApertura.disabled = false;
+    domCierre.disabled = false;
+  }
 }
 
 // Escuchar cambios en el selector de capas

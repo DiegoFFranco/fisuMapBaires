@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <h2 id="modeTitle">fisuMapBaiiiires - Modo Visor</h2>
   <button id="addPointBtn">Agregar Punto</button>
@@ -36,6 +38,34 @@
     <textarea id="descriptionInput"></textarea>
     <label for="photoInput">Fotos (máx. 5, JPG/PNG):</label>
     <input type="file" id="photoInput" accept="image/jpeg,image/png" multiple>
+
+    <!-- Sección de horarios (inicialmente oculta) -->
+    <div id="horariosSection" style="display: none;">
+      <h4>Horarios (solo para Comercios Fisuras)</h4>
+      <label><input type="checkbox" id="sameSchedule" onchange="toggleScheduleFields()"> Todos los días tienen el mismo
+        horario</label>
+      <div id="sameScheduleFields" style="display: none; margin-left: 20px;">
+        <label>Apertura: <input type="time" id="sameApertura"></label>
+        <label>Cierre: <input type="time" id="sameCierre"></label>
+      </div>
+      <div id="differentScheduleFields" style="display: none; margin-left: 20px;">
+        <h4>Horarios Diferentes</h4>
+        <div>
+          <label>Lunes-Viernes:</label>
+          <input type="time" id="lvApertura"> - <input type="time" id="lvCierre">
+        </div>
+        <div>
+          <label>Sábado:</label>
+          <input type="time" id="sabApertura"> - <input type="time" id="sabCierre">
+        </div>
+        <div>
+          <label>Domingo:</label>
+          <input type="time" id="domApertura"> - <input type="time" id="domCierre">
+          <label><input type="checkbox" id="domCerrado" onchange="toggleDomingoFields()"> Cerrado</label>
+        </div>
+      </div>
+    </div>
+
     <button id="submitBtn">Enviar Punto</button>
   </div>
   <div id="pointDetails">
@@ -44,14 +74,23 @@
   <div id="imageOverlay" onclick="hideOverlay()"></div>
   <div id="layerControls">
     <h3>Capas</h3>
-    <label style="background-color: red" for="fisurasCheck"><input type="checkbox" id="fisurasCheck" checked onchange="updateLayers()"> Fisuras <span id="fisurasCount">(0)</span></label>
-    <label style="background-color: green" for="limpiezaCheck"><input type="checkbox" id="limpiezaCheck" checked onchange="updateLayers()"> Limpieza <span id="limpiezaCount">(0)</span></label>
-    <label style="background-color: yellow" for="trapitosCheck"><input type="checkbox" id="trapitosCheck" checked onchange="updateLayers()"> Trapitos <span id="trapitosCount">(0)</span></label>
-    <label style="background-color: purple" for="narcomenudeoCheck"><input type="checkbox" id="narcomenudeoCheck" checked onchange="updateLayers()"> Narcomenudeo <span id="narcomenudeoCount">(0)</span></label>
-    <label style="background-color: orange" for="casas-tomadasCheck"><input type="checkbox" id="casas-tomadasCheck" checked onchange="updateLayers()"> Casas Tomadas <span id="casas-tomadasCount">(0)</span></label>
-    <label style="background-color: brown" for="comercios-fisurasCheck"><input type="checkbox" id="comercios-fisurasCheck" checked onchange="updateLayers()"> Comercios Fisuras <span id="comercios-fisurasCount">(0)</span></label>
-    <label style="background-color: gray" for="via-publicaCheck"><input type="checkbox" id="via-publicaCheck" checked onchange="updateLayers()"> Vía Pública <span id="via-publicaCount">(0)</span></label>
-    <label style="background-color: blue" for="comisariasCheck"><input type="checkbox" id="comisariasCheck" checked onchange="updateLayers()"> Comisarías <span id="comisariasCount">(0)</span></label>
+    <label style="background-color: red" for="fisurasCheck"><input type="checkbox" id="fisurasCheck" checked
+        onchange="updateLayers()"> Fisuras <span id="fisurasCount">(0)</span></label>
+    <label style="background-color: green" for="limpiezaCheck"><input type="checkbox" id="limpiezaCheck" checked
+        onchange="updateLayers()"> Limpieza <span id="limpiezaCount">(0)</span></label>
+    <label style="background-color: yellow" for="trapitosCheck"><input type="checkbox" id="trapitosCheck" checked
+        onchange="updateLayers()"> Trapitos <span id="trapitosCount">(0)</span></label>
+    <label style="background-color: purple" for="narcomenudeoCheck"><input type="checkbox" id="narcomenudeoCheck"
+        checked onchange="updateLayers()"> Narcomenudeo <span id="narcomenudeoCount">(0)</span></label>
+    <label style="background-color: orange" for="casas-tomadasCheck"><input type="checkbox" id="casas-tomadasCheck"
+        checked onchange="updateLayers()"> Casas Tomadas <span id="casas-tomadasCount">(0)</span></label>
+    <label style="background-color: brown" for="comercios-fisurasCheck"><input type="checkbox"
+        id="comercios-fisurasCheck" checked onchange="updateLayers()"> Comercios Fisuras <span
+        id="comercios-fisurasCount">(0)</span></label>
+    <label style="background-color: gray" for="via-publicaCheck"><input type="checkbox" id="via-publicaCheck" checked
+        onchange="updateLayers()"> Vía Pública <span id="via-publicaCount">(0)</span></label>
+    <label style="background-color: blue" for="comisariasCheck"><input type="checkbox" id="comisariasCheck" checked
+        onchange="updateLayers()"> Comisarías <span id="comisariasCount">(0)</span></label>
     <button onclick="selectAllLayers()">Ver todo</button>
     <button onclick="deselectAllLayers()">Ninguna</button>
   </div>
@@ -64,7 +103,7 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
     import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-  
+
     const firebaseConfig = {
       apiKey: "AIzaSyBzlFKmifVj7WiNaYXlB-PPKRhz-dr9HRk",
       authDomain: "fisumapbaires.firebaseapp.com",
@@ -73,7 +112,7 @@
       messagingSenderId: "575806613608",
       appId: "1:575806613608:web:4c14b7ff34c596a795f3dd"
     };
-  
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     window.db = db;
@@ -84,6 +123,7 @@
   </script>
 
   <script type="module" src="script.js"></script>
-  
+
 </body>
+
 </html>
