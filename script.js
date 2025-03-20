@@ -132,6 +132,7 @@ function hideDetails() {
 
 // Cargar puntos desde Firestore (usando una sola colección 'points')
 async function loadPoints() {
+  console.log('Iniciando carga de puntos...');
   // Limpiar todos los clusters
   Object.keys(clusterGroups).forEach(layer => {
     clusterGroups[layer].clearLayers();
@@ -139,8 +140,12 @@ async function loadPoints() {
   });
 
   try {
+    console.log('Conectando a Firestore...');
     const colRef = collection(db, 'points');
+    console.log('Obteniendo documentos de la colección "points"...');
     const snapshot = await getDocs(colRef);
+    console.log('Documentos obtenidos:', snapshot.docs.length);
+
     const counts = {
       'fisuras': 0,
       'limpieza': 0,
@@ -156,6 +161,8 @@ async function loadPoints() {
       const data = doc.data();
       const category = data.properties?.category || 'fisuras'; // Por defecto 'fisuras' si no tiene categoría
       counts[category]++; // Incrementar el conteo para la categoría
+
+      console.log('Procesando documento:', doc.id, data);
 
       return {
         type: data.type || 'Feature',
@@ -178,6 +185,8 @@ async function loadPoints() {
       type: 'FeatureCollection',
       features: features
     };
+
+    console.log('GeoJSON generado:', geojson);
 
     L.geoJSON(geojson, {
       pointToLayer: (feature, latlng) => {
