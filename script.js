@@ -425,6 +425,18 @@ async function submitPoint() {
 
   let imageUrls = [];
   if (files.length > 0) {
+    // Obtener las variables de entorno desde la Netlify Function
+    let env;
+    try {
+      env = await window.loadEnv();
+    } catch (error) {
+      console.error('Error al cargar las variables de entorno:', error);
+      alert('Error al cargar las variables de entorno. Por favor, intentá de nuevo.');
+      submitBtn.disabled = false;
+      document.getElementById('savingMessage').style.display = 'none';
+      return;
+    }
+
     for (const file of files) {
       const validTypes = ['image/jpeg', 'image/png'];
       if (!validTypes.includes(file.type)) {
@@ -438,12 +450,16 @@ async function submitPoint() {
       try {
         const response = await fetch('https://api.imgur.com/3/image', {
           method: 'POST',
-          headers: { Authorization: 'Client-ID ${window.env.IMGUR_CLIENT_ID}' },
+          headers: { Authorization: `Client-ID ${env.IMGUR_CLIENT_ID}` },
           body: formData
         });
         if (!response.ok) throw new Error(`Error en Imgur: ${response.status}`);
         const data = await response.json();
-        if (data.success) imageUrls.push(data.data.link);
+        if (data.success) {
+          imageUrls.push(data.data.link);
+        } else {
+          throw new Error('Error al subir la imagen a Imgur');
+        }
       } catch (e) {
         console.error('Error en Imgur:', e);
         alert(`Error subiendo una foto: ${e.message}. Revisá los formatos e intentá de nuevo.`);
