@@ -321,6 +321,8 @@ function updateEditorLayer() {
     const horariosSection = document.getElementById('horariosSection');
     if (selectedLayer === 'comercios-fisuras') {
       horariosSection.style.display = 'block';
+      // Inicializar el estado del formulario de horarios
+      toggleScheduleFields();
     } else {
       horariosSection.style.display = 'none';
     }
@@ -365,6 +367,13 @@ function toggleMode(lastCreatedLayer = null) {
     document.getElementById('addPointBtn').textContent = 'Volver a Visor';
     document.getElementById('pointDetails').style.display = 'none';
     document.getElementById('layerControls').style.display = 'none';
+    // Resetear la ubicación y el marcador al entrar en modo editor
+    latitude = null;
+    longitude = null;
+    if (currentMarker) {
+      map.removeLayer(currentMarker);
+      currentMarker = null;
+    }
     enableMapClick();
     updateEditorLayer();
   }
@@ -528,7 +537,9 @@ function updateLayers() {
         clusterGroups[layer].addTo(map);
       }
     } else {
-      map.removeLayer(clusterGroups[layer]);
+      if (map.hasLayer(clusterGroups[layer])) {
+        map.removeLayer(clusterGroups[layer]);
+      }
     }
   });
 }
@@ -594,3 +605,10 @@ document.getElementById('submitBtn').addEventListener('click', submitPoint);
 // Inicializar la carga de puntos y habilitar el clic en el mapa
 loadPoints();
 enableMapClick();
+
+// Hacer las funciones accesibles globalmente para los eventos en index.html
+window.selectAllLayers = selectAllLayers;
+window.deselectAllLayers = deselectAllLayers;
+window.updateLayers = updateLayers;
+window.toggleScheduleFields = toggleScheduleFields;
+window.toggleDomingoFields = toggleDomingoFields;
