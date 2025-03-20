@@ -137,8 +137,8 @@
       }
     }
   
-    // Inicializar Firebase después de cargar las variables
-    (async () => {
+    // Función para inicializar la app
+    window.initializeApp = async function() {
       try {
         const env = await loadEnv();
         console.log('Configurando Firebase con:', env);
@@ -166,11 +166,21 @@
         const script = document.createElement('script');
         script.type = 'module';
         script.src = 'script.js';
+        script.onload = () => {
+          console.log('script.js cargado, inicializando la app...');
+          window.startApp(); // Llamar a startApp() después de cargar script.js
+        };
         document.body.appendChild(script);
       } catch (error) {
         console.error('Error al inicializar Firebase:', error);
       }
-    })();
+    };
+  
+    // Llamar a initializeApp cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM cargado, inicializando la app...');
+      window.initializeApp();
+    });
   </script>
 
   <script type="module" src="script.js"></script>

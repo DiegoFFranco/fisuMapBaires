@@ -646,9 +646,12 @@ document.getElementById('layerSelect').addEventListener('change', updateEditorLa
 document.getElementById('addPointBtn').addEventListener('click', toggleMode);
 document.getElementById('submitBtn').addEventListener('click', submitPoint);
 
-// Inicializar la carga de puntos y habilitar el clic en el mapa
-loadPoints();
-enableMapClick();
+// Función para inicializar la app
+window.startApp = function() {
+  console.log('Iniciando la app...');
+  loadPoints();
+  enableMapClick();
+};
 
 // Hacer las funciones accesibles globalmente para los eventos en index.html
 window.selectAllLayers = selectAllLayers;
