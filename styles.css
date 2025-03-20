@@ -233,3 +233,32 @@ body {
   }
   
   /*fin nuevo codigo para popups*/
+
+  #horariosSection {
+    margin-top: 10px;
+  }
+  
+  #horariosSection h4 {
+    margin: 5px 0;
+  }
+  
+  .schedule-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+  
+  .schedule-row span {
+    width: 80px;
+    margin-right: 10px;
+  }
+  
+  .schedule-row input[type="time"] {
+    width: 100px;
+    margin-right: 10px;
+  }
+  
+  .schedule-row label {
+    margin-left: 10px;
+    font-weight: normal;
+  }

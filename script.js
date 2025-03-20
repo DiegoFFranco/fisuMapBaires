@@ -463,8 +463,9 @@ async function submitPoint() {
     } else {
       const lvApertura = document.getElementById('lvApertura').value;
       const lvCierre = document.getElementById('lvCierre').value;
-      const sabApertura = document.getElementById('sabApertura').value;
-      const sabCierre = document.getElementById('sabCierre').value;
+      const sabCerrado = document.getElementById('sabCerrado').checked;
+      const sabApertura = sabCerrado ? '' : document.getElementById('sabApertura').value;
+      const sabCierre = sabCerrado ? '' : document.getElementById('sabCierre').value;
       const domCerrado = document.getElementById('domCerrado').checked;
       const domApertura = domCerrado ? '' : document.getElementById('domApertura').value;
       const domCierre = domCerrado ? '' : document.getElementById('domCierre').value;
@@ -575,6 +576,26 @@ function toggleScheduleFields() {
   } else {
     sameScheduleFields.style.display = 'none';
     differentScheduleFields.style.display = 'block';
+    // Asegurarse de que los campos de sábado y domingo se actualicen según los checkboxes
+    toggleSabadoFields();
+    toggleDomingoFields();
+  }
+}
+
+// Deshabilitar campos de sábado si está marcado como "Cerrado"
+function toggleSabadoFields() {
+  const sabCerrado = document.getElementById('sabCerrado').checked;
+  const sabApertura = document.getElementById('sabApertura');
+  const sabCierre = document.getElementById('sabCierre');
+  
+  if (sabCerrado) {
+    sabApertura.disabled = true;
+    sabCierre.disabled = true;
+    sabApertura.value = '';
+    sabCierre.value = '';
+  } else {
+    sabApertura.disabled = false;
+    sabCierre.disabled = false;
   }
 }
 
@@ -612,3 +633,6 @@ window.deselectAllLayers = deselectAllLayers;
 window.updateLayers = updateLayers;
 window.toggleScheduleFields = toggleScheduleFields;
 window.toggleDomingoFields = toggleDomingoFields;
+window.hideOverlay = hideOverlay;
+window.navigateImages = navigateImages;
+window.toggleSabadoFields = toggleSabadoFields;

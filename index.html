@@ -42,25 +42,32 @@
     <!-- Sección de horarios (inicialmente oculta) -->
     <div id="horariosSection" style="display: none;">
       <h4>Horarios (solo para Comercios Fisuras)</h4>
-      <label><input type="checkbox" id="sameSchedule" onchange="toggleScheduleFields()"> Todos los días tienen el mismo
-        horario</label>
-      <div id="sameScheduleFields" style="display: none; margin-left: 20px;">
-        <label>Apertura: <input type="time" id="sameApertura"></label>
-        <label>Cierre: <input type="time" id="sameCierre"></label>
+      <label>
+        <input type="checkbox" id="sameSchedule" onchange="toggleScheduleFields()"> Todos los días tienen el mismo
+        horario
+      </label>
+      <div id="sameScheduleFields" style="display: none;">
+        <div class="schedule-row">
+          <input type="time" id="sameApertura">
+          <input type="time" id="sameCierre">
+        </div>
       </div>
-      <div id="differentScheduleFields" style="display: none; margin-left: 20px;">
-        <h4>Horarios Diferentes</h4>
-        <div>
-          <label>Lunes-Viernes:</label>
-          <input type="time" id="lvApertura"> - <input type="time" id="lvCierre">
+      <div id="differentScheduleFields" style="display: none;">
+        <div class="schedule-row">
+          <span>Lun-Vie:</span>
+          <input type="time" id="lvApertura">
+          <input type="time" id="lvCierre">
         </div>
-        <div>
-          <label>Sábado:</label>
-          <input type="time" id="sabApertura"> - <input type="time" id="sabCierre">
+        <div class="schedule-row">
+          <span>Sábado:</span>
+          <input type="time" id="sabApertura">
+          <input type="time" id="sabCierre">
+          <label><input type="checkbox" id="sabCerrado" onchange="toggleSabadoFields()"> Cerrado</label>
         </div>
-        <div>
-          <label>Domingo:</label>
-          <input type="time" id="domApertura"> - <input type="time" id="domCierre">
+        <div class="schedule-row">
+          <span>Domingo:</span>
+          <input type="time" id="domApertura">
+          <input type="time" id="domCierre">
           <label><input type="checkbox" id="domCerrado" onchange="toggleDomingoFields()"> Cerrado</label>
         </div>
       </div>
