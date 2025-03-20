@@ -429,7 +429,7 @@ async function submitPoint() {
       try {
         const response = await fetch('https://api.imgur.com/3/image', {
           method: 'POST',
-          headers: { Authorization: 'Client-ID 724f0aaea5b4c6b' },
+          headers: { Authorization: 'Client-ID ${window.env.IMGUR_CLIENT_ID}' },
           body: formData
         });
         if (!response.ok) throw new Error(`Error en Imgur: ${response.status}`);
