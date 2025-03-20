@@ -103,10 +103,10 @@
         onchange="updateLayers()"> Vía Pública <span id="via-publicaCount">(0)</span></label>
     <label style="background-color: blue" for="comisariasCheck"><input type="checkbox" id="comisariasCheck" checked
         onchange="updateLayers()"> Comisarías <span id="comisariasCount">(0)</span></label>
-        <div class="button-container">
-          <button onclick="selectAllLayers()">Ver todo</button>
-          <button onclick="deselectAllLayers()">Ninguna</button>
-        </div>
+    <div class="button-container">
+      <button onclick="selectAllLayers()">Ver todo</button>
+      <button onclick="deselectAllLayers()">Ninguna</button>
+    </div>
   </div>
   <div id="savingMessage">Guardando punto, por favor esperá...</div>
 
@@ -115,16 +115,16 @@
 
 
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+    import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
 
     const firebaseConfig = {
-      apiKey: "AIzaSyBzlFKmifVj7WiNaYXlB-PPKRhz-dr9HRk",
-      authDomain: "fisumapbaires.firebaseapp.com",
-      projectId: "fisumapbaires",
-      storageBucket: "fisumapbaires.firebasestorage.app",
-      messagingSenderId: "575806613608",
-      appId: "1:575806613608:web:4c14b7ff34c596a795f3dd"
+      apiKey: process.env.FIREBASE_API_KEY,
+      authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.FIREBASE_APP_ID
     };
 
     const app = initializeApp(firebaseConfig);
