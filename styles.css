@@ -44,10 +44,20 @@ body {
     margin: 5px 0;
   }
   
+  #pointForm label[for="sameSchedule"] {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  #pointForm label[for="sameSchedule"] input[type="checkbox"] {
+    margin-right: 8px;
+  }
+  
   #pointForm input,
   #pointForm select,
   #pointForm textarea {
-    width: 100%;
+    width: 100%;  
     margin-bottom: 10px;
   }
   
@@ -147,11 +157,14 @@ body {
     color: #fff;
   }
   
-  #layerControls label[for="trapitosCheck"],
-  /*#layerControls label[for="comercios-fisurasCheck"] {
+  #layerControls label[for="trapitosCheck"] {
     color: #000;
   }
-  */
+
+  #layerControls label[for='casas-tomadasCheck'] {
+    color: #000;
+  }
+
   .custom-popup {
     max-width: 300px;
     padding: 10px;
@@ -254,8 +267,11 @@ body {
   }
   
   .schedule-row input[type="time"] {
-    width: 100px;
+    width: 67px;
+    height: 20px;
     margin-right: 10px;
+    padding: 2px;
+    font-size: 12px;
   }
   
   .schedule-row label {

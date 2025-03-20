@@ -53,7 +53,7 @@ Object.keys(layersConfig).forEach(layer => {
 
 // Crear el contenido del popup
 function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios) {
-  const isLightBackground = ['yellow', 'pink'].includes(layersConfig[layer].color);
+  const isLightBackground = ['yellow', 'pink', 'orange'].includes(layersConfig[layer].color);
   const popupColor = layersConfig[layer].color;
   const cleanDescription = (description || '').replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
   let popupContent = `
