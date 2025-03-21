@@ -1,334 +1,368 @@
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #1a1a1a;
-    color: #fff;
-  }
-  
-  #mapContainer {
-    height: calc(100vh - 70px);
-    width: 100%;
-  }
-  
-  #modeTitle {
-    text-align: center;
-    margin: 10px 0;
-  }
-  
-  #addPointBtn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
-    padding: 5px 10px;
-    background: #333;
-    color: #fff;
-    border: none;
-  }
-  
-  #pointForm {
-    display: none;
-    position: absolute;
-    top: 50px;
-    left: 10px;
-    z-index: 1000;
-    background: #333;
-    padding: 15px;
-    border: 1px solid #555;
-    color: #fff;
-    width: 300px;
-  }
-  
-  #pointForm label {
-    display: block;
-    margin: 5px 0;
-  }
-  
-  #pointForm label[for="sameSchedule"] {
-    display: flex;
-    align-items: center;
-    margin: 5px 6px;
-    white-space: nowrap;
-    line-height: 1;
-    height: 31px;
-  }
-  
-  #pointForm label[for="sameSchedule"] input[type="checkbox"] {
-    margin: 0 8px 0 0;
-    height: 15px;
-    width: 40px;    
-  }
-  
-  #pointForm input,
-  #pointForm select,
-  #pointForm textarea {
-    width: 100%;  
-    margin-bottom: 10px;
-  }
-  
-  #pointForm textarea {
-    height: 80px;
-  }
-  
-  #pointForm button {
-    margin-top: 5px;
-  }
-  
-  #pointDetails {
-    display: none;
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    right: 10px;
-    z-index: 1000;
-    background: #333;
-    padding: 10px;
-    border: 1px solid #555;
-    color: #fff;
-  }
-  
-  #photoContainer {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    width: 100%;
-    overflow-x: auto;
-    padding: 5px 0;
-  }
-  
-  #photoContainer img {
-    height: 100px;
-    margin: 0 5px;
-    cursor: pointer;
-  }
-  
-  #imageOverlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 2000;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-  }
-  
-  #imageOverlay img {
-    max-width: 90%;
-    max-height: 90%;
-    border: 5px solid;
-  }
-  
-  #imageOverlay .nav-arrow {
-    position: absolute;
-    top: 50%;
-    font-size: 40px;
-    color: #fff;
-    cursor: pointer;
-  }
-  
-  #imageOverlay .prev {
-    left: 10px;
-  }
-  
-  #imageOverlay .next {
-    right: 10px;
-  }
-  
-  #layerControls {    
-    position: absolute;
-    top: 50px;
-    right: 10px;
-    z-index: 1000;
-    background: #333;
-    padding: 10px;
-    border: 1px solid #555;
-    color: #fff;
-  }
-  
-  #layerControls h3 {
-    text-align: center;
-    margin: 0 0 10px;
-  }
-  
-  #layerControls label {
-    display: block;
-    padding: 5px;
-    margin: 2px 0;
-    font-weight: bold;
-    color: #fff;
-  }
-  
-  #layerControls label[for="trapitosCheck"] {
-    color: #000;
-  }
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #1a1a1a;
+  color: #fff;
+}
 
-  #layerControls label[for='casas-tomadasCheck'] {
-    color: #000;
-  }
+#mapContainer {
+  height: calc(100vh - 70px);
+  width: 100%;
+}
 
-  #layerControls .button-container {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 10px;
-  }
+#modeTitle {
+  text-align: center;
+  margin: 10px 0;
+}
 
-  #layerControls .button-container button {
-    font-weight: bold;
-  }
+#addPointBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  padding: 5px 10px;
+  background: #333;
+  color: #fff;
+  border: none;
+}
 
-  #addPointBtn {
-    font-weight: bold;
-  }
-  
-  #pointForm #submitBtn {
-    font-weight: bold;
-  }
-  
-  .custom-popup {
-    max-width: 300px;
-    padding: 10px;
-    border: none;
-  }
-  
-  .custom-popup .title {
-    display: block;
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-  }
-  
-  .custom-popup .detail {
-    font-size: 14px;
-  }
-  
-  .custom-popup .detail b {
-    font-weight: bold;
-  }
-  
-  .custom-popup.light-text {
-    color: #000;
-  }
-  
-  .custom-popup.dark-text {
-    color: #fff;
-  }
-  
-  input,
-  select,
-  textarea,
-  button {
-    background: #444;
-    color: #fff;
-    border: 1px solid #666;
-  }
-  
-  #savingMessage {
-    display: none;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 3000;
-    background: #444;
-    padding: 10px;
-    border: 1px solid #666;
-  }
-  
-  /*nuevo codigo para popups*/
-  .leaflet-popup-content-wrapper {
-    padding: 0;
-    background: transparent;
-    border: none;
-  }
-  
-  .leaflet-popup-content {
-    margin: 0;
-  }
-  
-  .leaflet-popup-tip {
-    background: inherit;
-    border: none;
-  }
-  
-  /* Forzamos que no haya bordes residuales */
-  .leaflet-popup {
-    border: none;
-  }
-  
-  /* Agregamos bordes curvos al contenido del popup */
-  .custom-popup {
-    max-width: 300px;
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    /* Curvatura, podés ajustar el valor */
-  }
-  
-  /*fin nuevo codigo para popups*/
+#pointForm {
+  display: none;
+  position: absolute;
+  top: 50px;
+  left: 10px;
+  z-index: 1000;
+  background: #333;
+  padding: 15px;
+  border: 1px solid #555;
+  color: #fff;
+  width: 300px;
+}
 
-  #horariosSection {
-    margin-top: 10px;
-  }
-  
-  #horariosSection h4 {
-    margin: 5px 12px;
-  }
+#pointForm label {
+  display: block;
+  margin: 5px 0;
+}
 
-  #horariosSection .schedule-row input[type="time"] {
-    width: 67px !important;
-    height: 20px !important;
-    margin-right: 10px;
-    padding: 2px;
-    font-size: 12px;
-    line-height: 20px;
-    box-sizing: border-box;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-  }
-  
-  .schedule-row {
-    display: flex;
-    margin-bottom: 2px;
-    height: 42px;
-  }
-  
-  .schedule-row span {
-    width: 60px;
-    margin-right: 10px;
-    text-align: right;
-  }
-  
-  .schedule-row input[type="time"] {
-    width: 67px !important;
-    height: 20px !important;
-    margin-right: 10px;
-    padding: 2px;
-    font-size: 12px;
-    line-height: 20px;
-    box-sizing: border-box;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-  }
-  
-  .schedule-row .cerrado-label {
-    display: flex;
-    align-items: center;
-    margin-left: 10px;
-    font-weight: normal;
-    line-height: 1;
-  }
-  
-  .schedule-row .cerrado-label input[type="checkbox"] {
-    margin: 0 5px 0 0;
-  }
-  
-  .schedule-row .cerrado-label .cerrado-text {
-    margin-left: 5px;
-  }
+#pointForm label[for="sameSchedule"] {
+  display: flex;
+  align-items: center;
+  margin: 5px 6px;
+  white-space: nowrap;
+  line-height: 1;
+  height: 31px;
+}
+
+#pointForm label[for="sameSchedule"] input[type="checkbox"] {
+  margin: 0 8px 0 0;
+  height: 15px;
+  width: 40px;
+}
+
+#pointForm input,
+#pointForm select,
+#pointForm textarea {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+#pointForm textarea {
+  height: 80px;
+}
+
+#pointForm button {
+  margin-top: 5px;
+}
+
+#pointDetails {
+  display: none;
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 1000;
+  background: #333;
+  padding: 10px;
+  border: 1px solid #555;
+  color: #fff;
+}
+
+.address-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.address-container input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.address-container button {
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  transition: background-color 0.2s;
+}
+
+.address-container button:hover {
+  background-color: #e0e0e0;
+}
+
+.address-container button:active {
+  background-color: #d0d0d0;
+}
+
+#photoContainer {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  width: 100%;
+  overflow-x: auto;
+  padding: 5px 0;
+}
+
+#photoContainer img {
+  height: 100px;
+  margin: 0 5px;
+  cursor: pointer;
+}
+
+#imageOverlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+#imageOverlay img {
+  max-width: 90%;
+  max-height: 90%;
+  border: 5px solid;
+}
+
+#imageOverlay .nav-arrow {
+  position: absolute;
+  top: 50%;
+  font-size: 40px;
+  color: #fff;
+  cursor: pointer;
+}
+
+#imageOverlay .prev {
+  left: 10px;
+}
+
+#imageOverlay .next {
+  right: 10px;
+}
+
+#layerControls {
+  position: absolute;
+  top: 50px;
+  right: 10px;
+  z-index: 1000;
+  background: #333;
+  padding: 10px;
+  border: 1px solid #555;
+  color: #fff;
+}
+
+#layerControls h3 {
+  text-align: center;
+  margin: 0 0 10px;
+}
+
+#layerControls label {
+  display: block;
+  padding: 5px;
+  margin: 2px 0;
+  font-weight: bold;
+  color: #fff;
+}
+
+#layerControls label[for="trapitosCheck"] {
+  color: #000;
+}
+
+#layerControls label[for='casas-tomadasCheck'] {
+  color: #000;
+}
+
+#layerControls .button-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+#layerControls .button-container button {
+  font-weight: bold;
+}
+
+#addPointBtn {
+  font-weight: bold;
+}
+
+#pointForm #submitBtn {
+  font-weight: bold;
+}
+
+.custom-popup {
+  max-width: 300px;
+  padding: 10px;
+  border: none;
+}
+
+.custom-popup .title {
+  display: block;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.custom-popup .detail {
+  font-size: 14px;
+}
+
+.custom-popup .detail b {
+  font-weight: bold;
+}
+
+.custom-popup.light-text {
+  color: #000;
+}
+
+.custom-popup.dark-text {
+  color: #fff;
+}
+
+input,
+select,
+textarea,
+button {
+  background: #444;
+  color: #fff;
+  border: 1px solid #666;
+}
+
+#savingMessage {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3000;
+  background: #444;
+  padding: 10px;
+  border: 1px solid #666;
+}
+
+/*nuevo codigo para popups*/
+.leaflet-popup-content-wrapper {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+}
+
+.leaflet-popup-tip {
+  background: inherit;
+  border: none;
+}
+
+/* Forzamos que no haya bordes residuales */
+.leaflet-popup {
+  border: none;
+}
+
+/* Agregamos bordes curvos al contenido del popup */
+.custom-popup {
+  max-width: 300px;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  /* Curvatura, podés ajustar el valor */
+}
+
+/*fin nuevo codigo para popups*/
+
+#horariosSection {
+  margin-top: 10px;
+}
+
+#horariosSection h4 {
+  margin: 5px 12px;
+}
+
+#horariosSection .schedule-row input[type="time"] {
+  width: 67px !important;
+  height: 20px !important;
+  margin-right: 10px;
+  padding: 2px;
+  font-size: 12px;
+  line-height: 20px;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.schedule-row {
+  display: flex;
+  margin-bottom: 2px;
+  height: 42px;
+}
+
+.schedule-row span {
+  width: 60px;
+  margin-right: 10px;
+  text-align: right;
+}
+
+.schedule-row input[type="time"] {
+  width: 67px !important;
+  height: 20px !important;
+  margin-right: 10px;
+  padding: 2px;
+  font-size: 12px;
+  line-height: 20px;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.schedule-row .cerrado-label {
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+  font-weight: normal;
+  line-height: 1;
+}
+
+.schedule-row .cerrado-label input[type="checkbox"] {
+  margin: 0 5px 0 0;
+}
+
+.schedule-row .cerrado-label .cerrado-text {
+  margin-left: 5px;
+}
