@@ -316,13 +316,18 @@ function getCurrentLocation() {
 function updateEditorLayer() {
   if (isEditing) {
     const selectedLayer = document.getElementById('layerSelect').value;
+
+    // Asegurarse de que todas las capas se eliminen del mapa primero
     Object.keys(clusterGroups).forEach(layer => {
-      if (layer === selectedLayer) {
-        clusterGroups[layer].addTo(map);
-      } else {
+      if (map.hasLayer(clusterGroups[layer])) {
         map.removeLayer(clusterGroups[layer]);
       }
     });
+
+    // Añadir solo la capa seleccionada
+    clusterGroups[selectedLayer].addTo(map);
+
+    // Actualizar el marcador si existe
     if (currentMarker && latitude && longitude) {
       map.removeLayer(currentMarker);
       currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
@@ -340,7 +345,6 @@ function updateEditorLayer() {
   }
 }
 
-// Alternar entre modo visor y edición
 // Alternar entre modo visor y edición
 function toggleMode(lastCreatedLayer = null) {
   console.log('Entrando a toggleMode, isEditing:', isEditing);
@@ -656,6 +660,57 @@ function toggleDomingoFields() {
     domApertura.disabled = false;
     domCierre.disabled = false;
   }
+}
+
+// Función para limpiar el formulario y el estado
+function resetForm() {
+  console.log('Ejecutando resetForm...');
+  // Limpiar los campos del formulario
+  document.getElementById('addressInput').value = '';
+  document.getElementById('userInput').value = '';
+  document.getElementById('titleInput').value = '';
+  document.getElementById('descriptionInput').value = '';
+  document.getElementById('photoInput').value = '';
+
+  // Resetear el selector de capas a un valor predeterminado (por ejemplo, 'fisuras')
+  document.getElementById('layerSelect').value = 'fisuras';
+
+  // Limpiar los campos de horarios (para comercios-fisuras)
+  const sameSchedule = document.getElementById('sameSchedule');
+  const sameApertura = document.getElementById('sameApertura');
+  const sameCierre = document.getElementById('sameCierre');
+  const lvApertura = document.getElementById('lvApertura');
+  const lvCierre = document.getElementById('lvCierre');
+  const sabCerrado = document.getElementById('sabCerrado');
+  const sabApertura = document.getElementById('sabApertura');
+  const sabCierre = document.getElementById('sabCierre');
+  const domCerrado = document.getElementById('domCerrado');
+  const domApertura = document.getElementById('domApertura');
+  const domCierre = document.getElementById('domCierre');
+
+  // Resetear los valores de los horarios
+  sameSchedule.checked = false;
+  sameApertura.value = '';
+  sameCierre.value = '';
+  lvApertura.value = '';
+  lvCierre.value = '';
+  sabCerrado.checked = false;
+  sabApertura.value = '';
+  sabCierre.value = '';
+  domCerrado.checked = false;
+  domApertura.value = '';
+  domCierre.value = '';
+
+  // Asegurarse de que los campos de horarios se muestren/oculten correctamente
+  toggleScheduleFields();
+
+  // Confirmar que los campos se limpiaron (para depuración)
+  console.log('Formulario limpiado:');
+  console.log('addressInput:', document.getElementById('addressInput').value);
+  console.log('userInput:', document.getElementById('userInput').value);
+  console.log('titleInput:', document.getElementById('titleInput').value);
+  console.log('descriptionInput:', document.getElementById('descriptionInput').value);
+  console.log('photoInput:', document.getElementById('photoInput').value);
 }
 
 // Escuchar cambios en el selector de capas
