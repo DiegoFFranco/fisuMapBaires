@@ -3,6 +3,7 @@ let currentMarker = null;
 let isEditing = false;
 let currentImages = [];
 let currentImageIndex = -1;
+let lastUsedCategory = null; // Para rastrear la última categoría utilizada
 
 // Inicializar el mapa
 const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
@@ -561,6 +562,9 @@ async function submitPoint() {
     const currentCount = parseInt(countElement.textContent.replace(/[()]/g, '')) || 0;
     countElement.textContent = `(${currentCount + 1})`;
 
+    // Actualizar la última categoría utilizada
+    lastUsedCategory = category;
+
     alert('Punto enviado con éxito');
     toggleMode(category);
     marker.openPopup();
@@ -672,8 +676,40 @@ function resetForm() {
   document.getElementById('descriptionInput').value = '';
   document.getElementById('photoInput').value = '';
 
-  // Resetear el selector de capas a un valor predeterminado (por ejemplo, 'fisuras')
-  document.getElementById('layerSelect').value = 'fisuras';
+  // Determinar la categoría a usar en layerSelect
+  let selectedCategory = 'fisuras'; // Valor predeterminado
+
+  if (!isEditing) {
+    // Estamos entrando al modo editor desde el modo visor
+    // Contar cuántas capas están seleccionadas en el modo visor
+    let selectedLayersCount = 0;
+    Object.keys(clusterGroups).forEach(layer => {
+      const checkbox = document.getElementById(`${layer}Check`);
+      if (checkbox.checked) {
+        selectedLayersCount++;
+      }
+    });
+
+    // Si hay 0 o más de 1 capa seleccionada, usamos 'fisuras'
+    // Si hay exactamente 1 capa seleccionada, usamos esa capa
+    if (selectedLayersCount === 1) {
+      Object.keys(clusterGroups).forEach(layer => {
+        const checkbox = document.getElementById(`${layer}Check`);
+        if (checkbox.checked) {
+          selectedCategory = layer;
+        }
+      });
+    } else if (lastUsedCategory) {
+      // Si no hay una sola capa seleccionada, pero tenemos una última categoría utilizada, la usamos
+      selectedCategory = lastUsedCategory;
+    }
+  } else if (lastUsedCategory) {
+    // Si estamos en modo editor (por ejemplo, después de un error), usamos la última categoría
+    selectedCategory = lastUsedCategory;
+  }
+
+  // Establecer la categoría en layerSelect
+  document.getElementById('layerSelect').value = selectedCategory;
 
   // Limpiar los campos de horarios (para comercios-fisuras)
   const sameSchedule = document.getElementById('sameSchedule');
@@ -711,6 +747,7 @@ function resetForm() {
   console.log('titleInput:', document.getElementById('titleInput').value);
   console.log('descriptionInput:', document.getElementById('descriptionInput').value);
   console.log('photoInput:', document.getElementById('photoInput').value);
+  console.log('layerSelect:', document.getElementById('layerSelect').value);
 }
 
 // Escuchar cambios en el selector de capas
