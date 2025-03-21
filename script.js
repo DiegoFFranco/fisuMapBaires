@@ -351,6 +351,7 @@ function toggleMode(category) {
     document.getElementById('selectAllBtn').style.display = 'inline-block';
     document.getElementById('deselectAllBtn').style.display = 'inline-block';
     addPointBtn.textContent = 'Agregar Punto'; // Restaurar el texto del botón
+    document.getElementById('horariosSection').style.display = 'none'; // Ocultar el panel de horarios al volver al modo visor
     isEditing = false;
 
     // Mostrar solo la capa del último punto creado
@@ -414,6 +415,15 @@ function toggleMode(category) {
 
     // Habilitar el evento de clic para agregar puntos en modo editor
     enableMapClick();
+
+    // Asegurarse de que el panel de horarios se muestre u oculte según la categoría seleccionada
+    const horariosSection = document.getElementById('horariosSection');
+    if (selectedCategory === 'comercios-fisuras') {
+      horariosSection.style.display = 'block';
+      toggleScheduleFields();
+    } else {
+      horariosSection.style.display = 'none';
+    }
 
     // Actualizar el título del modo
     document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Editor';
@@ -778,8 +788,14 @@ function resetForm() {
   domApertura.value = '';
   domCierre.value = '';
 
-  // Asegurarse de que los campos de horarios se muestren/oculten correctamente
-  toggleScheduleFields();
+  // Asegurarse de que el panel de horarios se muestre u oculte según la categoría seleccionada
+  const horariosSection = document.getElementById('horariosSection');
+  if (selectedCategory === 'comercios-fisuras') {
+    horariosSection.style.display = 'block';
+    toggleScheduleFields();
+  } else {
+    horariosSection.style.display = 'none';
+  }
 
   // Confirmar que los campos se limpiaron (para depuración)
   console.log('Formulario limpiado:');
@@ -789,6 +805,7 @@ function resetForm() {
   console.log('descriptionInput:', document.getElementById('descriptionInput').value);
   console.log('photoInput:', document.getElementById('photoInput').value);
   console.log('layerSelect:', document.getElementById('layerSelect').value);
+  console.log('horariosSection display:', horariosSection.style.display);
 }
 
 // Escuchar cambios en el selector de capas
