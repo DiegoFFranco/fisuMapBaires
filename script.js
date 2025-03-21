@@ -397,6 +397,9 @@ function toggleMode(category) {
     addPointBtn.textContent = 'Volver a Visor'; // Cambiar el texto del botón a "Volver a Visor"
     document.getElementById('pointDetails').style.display = 'none'; // Ocultar el panel de fotos
 
+    // Cerrar cualquier popup abierto en el mapa
+    map.closePopup();
+
     // Llamar a resetForm antes de establecer isEditing = true
     resetForm();
 
