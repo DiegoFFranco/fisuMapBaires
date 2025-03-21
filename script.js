@@ -440,13 +440,18 @@ function showSuccessOverlay() {
   const successOverlay = document.getElementById('successOverlay');
   successOverlay.style.display = 'flex';
 
-  // Agregar un evento de clic para ocultar el overlay
+  // Desaparecer automáticamente después de 3 segundos
+  setTimeout(() => {
+    successOverlay.style.display = 'none';
+  }, 3000);
+
+  // También permitir ocultar con clic
   successOverlay.addEventListener('click', function hideOnClick() {
     successOverlay.style.display = 'none';
-    // Remover el evento después de usarlo para evitar múltiples listeners
     successOverlay.removeEventListener('click', hideOnClick);
   });
 }
+
 
 // Guardar un punto en Firestore (usando una sola colección 'points')
 async function submitPoint() {
