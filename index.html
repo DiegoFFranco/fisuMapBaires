@@ -27,11 +27,6 @@
       <option value="via-publica">Vía Pública</option>
     </select>
     <label for="addressInput">Dirección:</label>
-    <!--
-    <input type="text" id="addressInput" placeholder="Ingresá una dirección">
-    <button onclick="geocodeAddress()">Buscar</button>
-    <button onclick="getCurrentLocation()">Ubicación Actual</button>
-    -->
     <div class="address-container">
       <input type="text" id="addressInput" placeholder="Ingresá una dirección">
       <div class="button-container">
@@ -114,8 +109,8 @@
     <label style="background-color: blue" for="comisariasCheck"><input type="checkbox" id="comisariasCheck" checked
         onchange="updateLayers()"> Comisarías <span id="comisariasCount">(0)</span></label>
     <div class="button-container">
-      <button onclick="selectAllLayers()">Ver todo</button>
-      <button onclick="deselectAllLayers()">Ninguna</button>
+      <button id="selectAllBtn" onclick="selectAllLayers()">Ver todo</button>
+      <button id="deselectAllBtn" onclick="deselectAllLayers()">Ninguna</button>
     </div>
   </div>
   <div id="savingMessage">Guardando punto, por favor esperá...</div>
@@ -123,7 +118,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
-  
   <script type="module">
     // Importar las funciones de Firebase
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
@@ -192,6 +186,5 @@
       window.initializeApp();
     });
   </script>  
-
 </body>
 </html>

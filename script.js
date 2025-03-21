@@ -4,6 +4,7 @@ let isEditing = false;
 let currentImages = [];
 let currentImageIndex = -1;
 let lastUsedCategory = null; // Para rastrear la última categoría utilizada
+let lastCreatedLayer = null; // Para rastrear la última capa creada
 
 // Inicializar el mapa
 const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
@@ -221,39 +222,6 @@ async function loadPoints() {
   }
 }
 
-// Habilitar el clic en el mapa para agregar puntos
-function enableMapClick() {
-  map.on('click', async (event) => {
-    if (isEditing) {
-      latitude = event.latlng.lat;
-      longitude = event.latlng.lng;
-      if (currentMarker) map.removeLayer(currentMarker);
-      const selectedLayer = document.getElementById('layerSelect').value;
-      currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
-
-      try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
-        const data = await response.json();
-        document.getElementById('addressInput').value = data.display_name || `Lat: ${latitude}, Lon: ${longitude}`;
-      } catch (e) {
-        console.error('Error en geocodificación inversa:', e);
-        document.getElementById('addressInput').value = `Lat: ${latitude}, Lon: ${longitude}`;
-      }
-    } else {
-      hideDetails();
-    }
-  });
-}
-
-// Deshabilitar el clic en el mapa
-function disableMapClick() {
-  map.off('click');
-  if (currentMarker) {
-    map.removeLayer(currentMarker);
-    currentMarker = null;
-  }
-}
-
 // Geocodificar una dirección
 async function geocodeAddress() {
   console.log('Botón de búsqueda clicado, ejecutando geocodeAddress...');
@@ -374,6 +342,21 @@ function toggleMode(category) {
         }
       });
     }
+
+    // Deshabilitar el evento de clic para agregar puntos y configurar el modo visor
+    map.off('click'); // Eliminar cualquier evento de clic existente
+    map.on('click', (event) => {
+      hideDetails(); // En modo visor, solo ocultar detalles al hacer clic
+    });
+
+    // Eliminar el marcador actual si existe
+    if (currentMarker) {
+      map.removeLayer(currentMarker);
+      currentMarker = null;
+    }
+
+    // Actualizar el título del modo
+    document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Visor';
   } else {
     // Pasar de modo visor a modo editor
     document.getElementById('pointForm').style.display = 'block';
@@ -400,6 +383,30 @@ function toggleMode(category) {
         map.removeLayer(clusterGroups[layer]);
       }
     });
+
+    // Habilitar el evento de clic para agregar puntos en modo editor
+    map.off('click'); // Eliminar cualquier evento de clic existente
+    map.on('click', async (event) => {
+      if (isEditing) {
+        latitude = event.latlng.lat;
+        longitude = event.latlng.lng;
+        if (currentMarker) map.removeLayer(currentMarker);
+        const selectedLayer = document.getElementById('layerSelect').value;
+        currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
+
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+          const data = await response.json();
+          document.getElementById('addressInput').value = data.display_name || `Lat: ${latitude}, Lon: ${longitude}`;
+        } catch (e) {
+          console.error('Error en geocodificación inversa:', e);
+          document.getElementById('addressInput').value = `Lat: ${latitude}, Lon: ${longitude}`;
+        }
+      }
+    });
+
+    // Actualizar el título del modo
+    document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Editor';
   }
 }
 
@@ -789,7 +796,10 @@ document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
 window.startApp = function() {
   console.log('Iniciando la app...');
   loadPoints();
-  enableMapClick();
+  // Configuramos el evento de clic inicial para el modo visor
+  map.on('click', (event) => {
+    hideDetails(); // En modo visor, solo ocultar detalles al hacer clic
+  });
 };
 
 // Hacer las funciones accesibles globalmente para los eventos en index.html
