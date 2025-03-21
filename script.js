@@ -396,8 +396,9 @@ function toggleMode(lastCreatedLayer = null) {
 // Guardar un punto en Firestore (usando una sola colección 'points')
 async function submitPoint() {
   const submitBtn = document.getElementById('submitBtn');
+
+  // Deshabilitar el botón de envío para evitar múltiples clics
   submitBtn.disabled = true;
-  document.getElementById('savingMessage').style.display = 'block';
 
   const category = document.getElementById('layerSelect').value;
   const user = document.getElementById('userInput').value || 'Anónimo';
@@ -407,38 +408,45 @@ async function submitPoint() {
   const photoInput = document.getElementById('photoInput');
   const files = photoInput.files;
 
+  // Validar coordenadas
   if (!latitude || !longitude) {
     alert('Hacé clic en el mapa, buscá una dirección o usá tu ubicación actual.');
     submitBtn.disabled = false;
-    document.getElementById('savingMessage').style.display = 'none';
     return;
   }
 
+  // Validar título
   if (!title) {
     alert('Ingresá un título para el punto.');
     submitBtn.disabled = false;
-    document.getElementById('savingMessage').style.display = 'none';
     return;
   }
 
+  // Validar número de archivos
   if (files.length > 5) {
     alert('Máximo 5 fotos permitidas.');
     submitBtn.disabled = false;
-    document.getElementById('savingMessage').style.display = 'none';
     return;
   }
 
-  let imageUrls = [];
+  // Validar formatos de los archivos
   if (files.length > 0) {
     for (const file of files) {
       const validTypes = ['image/jpeg', 'image/png'];
       if (!validTypes.includes(file.type)) {
         alert(`Formato no soportado: ${file.name}. Usá JPG o PNG.`);
         submitBtn.disabled = false;
-        document.getElementById('savingMessage').style.display = 'none';
         return;
       }
+    }
+  }
 
+  // Si todas las validaciones pasan, ahora sí mostramos el mensaje "guardando punto"
+  document.getElementById('savingMessage').style.display = 'block';
+
+  let imageUrls = [];
+  if (files.length > 0) {
+    for (const file of files) {
       // Convertir la imagen a base64
       const reader = new FileReader();
       const base64Promise = new Promise((resolve, reject) => {
@@ -553,6 +561,8 @@ async function submitPoint() {
     console.error('Error al guardar en Firestore:', error);
     alert(`Error al enviar: ${error.message}`);
   }
+
+  // Rehabilitar el botón y ocultar el mensaje de guardado al final
   submitBtn.disabled = false;
   document.getElementById('savingMessage').style.display = 'none';
 }
