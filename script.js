@@ -199,7 +199,9 @@ async function loadPoints() {
         const { name, description, user, address, imageUrls, category, status, horarios } = feature.properties;
         layerFeature.bindPopup(createPopupContent(name, user, description, address, category, imageUrls || [], status, horarios), { className: '' });
         layerFeature.on('click', (e) => {
-          showDetails(imageUrls || [], category);
+          if (!isEditing) { // Solo mostrar detalles si no estamos en modo editor
+            showDetails(imageUrls || [], category);
+          }
           L.DomEvent.stopPropagation(e);
         });
         // Agregar el marcador al cluster correspondiente
@@ -314,16 +316,41 @@ function updateEditorLayer() {
   }
 }
 
+// Habilitar el evento de clic en el mapa para modo editor
+function enableMapClick() {
+  map.off('click'); // Eliminar cualquier evento de clic existente
+  map.on('click', async (event) => {
+    if (isEditing) {
+      latitude = event.latlng.lat;
+      longitude = event.latlng.lng;
+      if (currentMarker) map.removeLayer(currentMarker);
+      const selectedLayer = document.getElementById('layerSelect').value;
+      currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
+
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+        const data = await response.json();
+        document.getElementById('addressInput').value = data.display_name || `Lat: ${latitude}, Lon: ${longitude}`;
+      } catch (e) {
+        console.error('Error en geocodificación inversa:', e);
+        document.getElementById('addressInput').value = `Lat: ${latitude}, Lon: ${longitude}`;
+      }
+    }
+  });
+}
+
 // Alternar entre modo visor y edición
 function toggleMode(category) {
   console.log('Entrando a toggleMode, isEditing:', isEditing);
+  const addPointBtn = document.getElementById('addPointBtn');
+
   if (isEditing) {
     // Pasar de modo editor a modo visor
     document.getElementById('pointForm').style.display = 'none';
     document.getElementById('layerControls').style.display = 'block';
-    document.getElementById('addPointBtn').style.display = 'block';
     document.getElementById('selectAllBtn').style.display = 'inline-block';
     document.getElementById('deselectAllBtn').style.display = 'inline-block';
+    addPointBtn.textContent = 'Agregar Punto'; // Restaurar el texto del botón
     isEditing = false;
 
     // Mostrar solo la capa del último punto creado
@@ -364,9 +391,10 @@ function toggleMode(category) {
     console.log('Botones presentes - searchAddressBtn:', document.getElementById('searchAddressBtn'), 'currentLocationBtn:', document.getElementById('currentLocationBtn'));
     console.log('Contenedor de botones presente - button-container:', document.getElementById('button-container'), document.getElementById('button-container')?.style.display);
     document.getElementById('layerControls').style.display = 'none';
-    document.getElementById('addPointBtn').style.display = 'none';
     document.getElementById('selectAllBtn').style.display = 'none';
     document.getElementById('deselectAllBtn').style.display = 'none';
+    addPointBtn.textContent = 'Volver a Visor'; // Cambiar el texto del botón a "Volver a Visor"
+    document.getElementById('pointDetails').style.display = 'none'; // Ocultar el panel de fotos
 
     // Llamar a resetForm antes de establecer isEditing = true
     resetForm();
@@ -385,25 +413,7 @@ function toggleMode(category) {
     });
 
     // Habilitar el evento de clic para agregar puntos en modo editor
-    map.off('click'); // Eliminar cualquier evento de clic existente
-    map.on('click', async (event) => {
-      if (isEditing) {
-        latitude = event.latlng.lat;
-        longitude = event.latlng.lng;
-        if (currentMarker) map.removeLayer(currentMarker);
-        const selectedLayer = document.getElementById('layerSelect').value;
-        currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
-
-        try {
-          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
-          const data = await response.json();
-          document.getElementById('addressInput').value = data.display_name || `Lat: ${latitude}, Lon: ${longitude}`;
-        } catch (e) {
-          console.error('Error en geocodificación inversa:', e);
-          document.getElementById('addressInput').value = `Lat: ${latitude}, Lon: ${longitude}`;
-        }
-      }
-    });
+    enableMapClick();
 
     // Actualizar el título del modo
     document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Editor';
@@ -558,7 +568,9 @@ async function submitPoint() {
     const marker = L.marker([latitude, longitude], { icon: icons[category] });
     marker.bindPopup(createPopupContent(title, user, description, address, category, imageUrls, 'temporal', horarios), { className: '' });
     marker.on('click', (e) => {
-      showDetails(imageUrls, category);
+      if (!isEditing) { // Solo mostrar detalles si no estamos en modo editor
+        showDetails(imageUrls, category);
+      }
       L.DomEvent.stopPropagation(e);
     });
     clusterGroups[category].addLayer(marker);
@@ -601,6 +613,11 @@ function updateLayers() {
       }
     }
   });
+  // Si no hay capas seleccionadas, ocultar el panel de fotos
+  const anyLayerSelected = Object.keys(clusterGroups).some(layer => document.getElementById(`${layer}Check`).checked);
+  if (!anyLayerSelected) {
+    hideDetails();
+  }
 }
 
 // Seleccionar todas las capas
@@ -778,7 +795,7 @@ function resetForm() {
 document.getElementById('layerSelect').addEventListener('change', updateEditorLayer);
 
 // Agregar evento al botón de agregar punto
-document.getElementById('addPointBtn').addEventListener('click', toggleMode);
+document.getElementById('addPointBtn').addEventListener('click', () => toggleMode());
 document.getElementById('submitBtn').addEventListener('click', submitPoint);
 
 // Agregar eventos a los botones de búsqueda y ubicación actual
