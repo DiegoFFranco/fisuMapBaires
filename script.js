@@ -683,33 +683,43 @@ function resetForm() {
     // Estamos entrando al modo editor desde el modo visor
     // Contar cuántas capas están seleccionadas en el modo visor
     let selectedLayersCount = 0;
+    let selectedLayer = null;
     Object.keys(clusterGroups).forEach(layer => {
       const checkbox = document.getElementById(`${layer}Check`);
       if (checkbox.checked) {
         selectedLayersCount++;
+        selectedLayer = layer; // Guardamos la capa seleccionada
       }
     });
+    console.log('Capas seleccionadas en modo visor:', selectedLayersCount);
+    console.log('Capa seleccionada en modo visor:', selectedLayer);
+    console.log('lastUsedCategory:', lastUsedCategory);
 
-    // Si hay 0 o más de 1 capa seleccionada, usamos 'fisuras'
-    // Si hay exactamente 1 capa seleccionada, usamos esa capa
     if (selectedLayersCount === 1) {
-      Object.keys(clusterGroups).forEach(layer => {
-        const checkbox = document.getElementById(`${layer}Check`);
-        if (checkbox.checked) {
-          selectedCategory = layer;
-        }
-      });
-    } else if (lastUsedCategory) {
-      // Si no hay una sola capa seleccionada, pero tenemos una última categoría utilizada, la usamos
-      selectedCategory = lastUsedCategory;
+      // Hay exactamente 1 capa seleccionada
+      if (selectedLayer === lastUsedCategory) {
+        // La capa seleccionada es igual a lastUsedCategory
+        selectedCategory = lastUsedCategory;
+        console.log('Usando lastUsedCategory (misma capa seleccionada):', selectedCategory);
+      } else {
+        // La capa seleccionada es distinta a lastUsedCategory
+        selectedCategory = selectedLayer;
+        console.log('Usando capa seleccionada en modo visor (distinta a lastUsedCategory):', selectedCategory);
+      }
+    } else {
+      // Hay 0 o más de 1 capa seleccionada, usamos 'fisuras'
+      selectedCategory = 'fisuras';
+      console.log('Usando categoría predeterminada (0 o más de 1 capa seleccionada):', selectedCategory);
     }
   } else if (lastUsedCategory) {
     // Si estamos en modo editor (por ejemplo, después de un error), usamos la última categoría
     selectedCategory = lastUsedCategory;
+    console.log('Usando lastUsedCategory en modo editor:', selectedCategory);
   }
 
   // Establecer la categoría en layerSelect
   document.getElementById('layerSelect').value = selectedCategory;
+  console.log('layerSelect establecido a:', selectedCategory);
 
   // Limpiar los campos de horarios (para comercios-fisuras)
   const sameSchedule = document.getElementById('sameSchedule');
