@@ -375,6 +375,8 @@ function toggleMode(lastCreatedLayer = null) {
     isEditing = true;
     document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Edición';
     document.getElementById('pointForm').style.display = 'block';
+    console.log('Mostrando el formulario, #pointForm display:', document.getElementById('pointForm').style.display);
+    console.log('Botones presentes - searchAddressBtn:', document.getElementById('searchAddressBtn'), 'currentLocationBtn:', document.getElementById('currentLocationBtn'));
     document.getElementById('addPointBtn').textContent = 'Volver a Visor';
     document.getElementById('pointDetails').style.display = 'none';
     document.getElementById('layerControls').style.display = 'none';

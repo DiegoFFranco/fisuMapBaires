@@ -88,37 +88,20 @@ body {
 }
 
 .address-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .address-container input {
-  flex: 1;
-  padding: 8px;
+  padding: 2px;
   border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .address-container button {
-  padding: 8px 12px;
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 2px 6px;
+  margin-left: 5px;
   cursor: pointer;
-  font-size: 14px;
-  color: #333;
-  transition: background-color 0.2s;
-}
-
-.address-container button:hover {
-  background-color: #e0e0e0;
-}
-
-.address-container button:active {
-  background-color: #d0d0d0;
 }
 
 #photoContainer {
