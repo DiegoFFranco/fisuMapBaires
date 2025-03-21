@@ -355,3 +355,35 @@ button {
 .schedule-row .cerrado-label .cerrado-text {
   margin-left: 5px;
 }
+
+/* Estilos para el overlay de éxito */
+#successOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Fondo semitransparente */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Asegurarse de que esté por encima de otros elementos */
+}
+
+#successImage {
+  max-width: 200px; /* Ajusta el tamaño según tu imagen */
+  max-height: 200px;
+  animation: fadeIn 0.5s ease-in-out; /* Animación de entrada */
+}
+
+/* Animación de entrada para la imagen */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

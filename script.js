@@ -93,6 +93,8 @@ function showDetails(imageUrls, layer) {
       img.onclick = () => showOverlay(url, layer, imageUrls, index);
       photoContainer.appendChild(img);
     });
+    // Asegurarse de que el contenedor sea visible y se desplace al principio
+    photoContainer.scrollLeft = 0;
   }
 }
 
@@ -433,6 +435,19 @@ function toggleMode(category) {
   }
 }
 
+// Función para mostrar el overlay de éxito
+function showSuccessOverlay() {
+  const successOverlay = document.getElementById('successOverlay');
+  successOverlay.style.display = 'flex';
+
+  // Agregar un evento de clic para ocultar el overlay
+  successOverlay.addEventListener('click', function hideOnClick() {
+    successOverlay.style.display = 'none';
+    // Remover el evento después de usarlo para evitar múltiples listeners
+    successOverlay.removeEventListener('click', hideOnClick);
+  });
+}
+
 // Guardar un punto en Firestore (usando una sola colección 'points')
 async function submitPoint() {
   const submitBtn = document.getElementById('submitBtn');
@@ -598,7 +613,9 @@ async function submitPoint() {
     // Actualizar la última categoría utilizada
     lastUsedCategory = category;
 
-    alert('Punto enviado con éxito');
+    // Mostrar el overlay de éxito en lugar del alert
+    showSuccessOverlay();
+
     toggleMode(category);
     marker.openPopup();
     showDetails(imageUrls, category);
