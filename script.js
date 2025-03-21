@@ -377,6 +377,7 @@ function toggleMode(lastCreatedLayer = null) {
     document.getElementById('pointForm').style.display = 'block';
     console.log('Mostrando el formulario, #pointForm display:', document.getElementById('pointForm').style.display);
     console.log('Botones presentes - searchAddressBtn:', document.getElementById('searchAddressBtn'), 'currentLocationBtn:', document.getElementById('currentLocationBtn'));
+    console.log('Contenedor de botones presente - button-container:', document.querySelector('.button-container'));
     document.getElementById('addPointBtn').textContent = 'Volver a Visor';
     document.getElementById('pointDetails').style.display = 'none';
     document.getElementById('layerControls').style.display = 'none';
