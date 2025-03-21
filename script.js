@@ -341,6 +341,7 @@ function updateEditorLayer() {
 }
 
 // Alternar entre modo visor y edición
+// Alternar entre modo visor y edición
 function toggleMode(lastCreatedLayer = null) {
   console.log('Entrando a toggleMode, isEditing:', isEditing);
   if (isEditing) {
@@ -352,11 +353,6 @@ function toggleMode(lastCreatedLayer = null) {
     document.getElementById('layerControls').style.display = 'block';
     disableMapClick();
     enableMapClick();
-    document.getElementById('addressInput').value = '';
-    document.getElementById('userInput').value = '';
-    document.getElementById('titleInput').value = '';
-    document.getElementById('descriptionInput').value = '';
-    document.getElementById('photoInput').value = '';
     if (lastCreatedLayer) {
       Object.keys(clusterGroups).forEach(layer => {
         const checkbox = document.getElementById(`${layer}Check`);
@@ -381,6 +377,7 @@ function toggleMode(lastCreatedLayer = null) {
     document.getElementById('addPointBtn').textContent = 'Volver a Visor';
     document.getElementById('pointDetails').style.display = 'none';
     document.getElementById('layerControls').style.display = 'none';
+
     // Resetear la ubicación y el marcador al entrar en modo editor
     latitude = null;
     longitude = null;
@@ -388,6 +385,13 @@ function toggleMode(lastCreatedLayer = null) {
       map.removeLayer(currentMarker);
       currentMarker = null;
     }
+
+    // Cerrar cualquier popup abierto en el mapa
+    map.closePopup();
+
+    // Limpiar el formulario y el estado
+    resetForm();
+
     enableMapClick();
     updateEditorLayer();
   }
