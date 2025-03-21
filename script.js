@@ -347,17 +347,21 @@ function updateEditorLayer() {
 }
 
 // Alternar entre modo visor y edición
-function toggleMode(lastCreatedLayer = null) {
+function toggleMode(category) {
   console.log('Entrando a toggleMode, isEditing:', isEditing);
   if (isEditing) {
-    isEditing = false;
-    document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Visor';
+    // Pasar de modo editor a modo visor
     document.getElementById('pointForm').style.display = 'none';
-    document.getElementById('addPointBtn').textContent = 'Agregar Punto';
-    document.getElementById('pointDetails').style.display = 'none';
     document.getElementById('layerControls').style.display = 'block';
-    disableMapClick();
-    enableMapClick();
+    document.getElementById('addPointBtn').style.display = 'block';
+    document.getElementById('selectAllBtn').style.display = 'inline-block';
+    document.getElementById('deselectAllBtn').style.display = 'inline-block';
+    isEditing = false;
+
+    // Mostrar solo la capa del último punto creado
+    if (category) {
+      lastCreatedLayer = category;
+    }
     if (lastCreatedLayer) {
       Object.keys(clusterGroups).forEach(layer => {
         const checkbox = document.getElementById(`${layer}Check`);
@@ -369,36 +373,33 @@ function toggleMode(lastCreatedLayer = null) {
           map.removeLayer(clusterGroups[layer]);
         }
       });
-    } else {
-      updateLayers();
     }
   } else {
-    isEditing = true;
-    document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Edición';
+    // Pasar de modo visor a modo editor
     document.getElementById('pointForm').style.display = 'block';
     console.log('Mostrando el formulario, #pointForm display:', document.getElementById('pointForm').style.display);
     console.log('Botones presentes - searchAddressBtn:', document.getElementById('searchAddressBtn'), 'currentLocationBtn:', document.getElementById('currentLocationBtn'));
-    console.log('Contenedor de botones presente - button-container:', document.querySelector('.button-container'));
-    document.getElementById('addPointBtn').textContent = 'Volver a Visor';
-    document.getElementById('pointDetails').style.display = 'none';
+    console.log('Contenedor de botones presente - button-container:', document.getElementById('button-container'), document.getElementById('button-container')?.style.display);
     document.getElementById('layerControls').style.display = 'none';
+    document.getElementById('addPointBtn').style.display = 'none';
+    document.getElementById('selectAllBtn').style.display = 'none';
+    document.getElementById('deselectAllBtn').style.display = 'none';
 
-    // Resetear la ubicación y el marcador al entrar en modo editor
-    latitude = null;
-    longitude = null;
-    if (currentMarker) {
-      map.removeLayer(currentMarker);
-      currentMarker = null;
-    }
-
-    // Cerrar cualquier popup abierto en el mapa
-    map.closePopup();
-
-    // Limpiar el formulario y el estado
+    // Llamar a resetForm antes de establecer isEditing = true
     resetForm();
 
-    enableMapClick();
-    updateEditorLayer();
+    // Ahora establecemos isEditing = true
+    isEditing = true;
+
+    // Mostrar solo la capa seleccionada en layerSelect
+    const selectedCategory = document.getElementById('layerSelect').value;
+    Object.keys(clusterGroups).forEach(layer => {
+      if (layer === selectedCategory) {
+        clusterGroups[layer].addTo(map);
+      } else {
+        map.removeLayer(clusterGroups[layer]);
+      }
+    });
   }
 }
 
