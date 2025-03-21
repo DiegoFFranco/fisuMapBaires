@@ -684,11 +684,17 @@ function resetForm() {
     // Contar cuántas capas están seleccionadas en el modo visor
     let selectedLayersCount = 0;
     let selectedLayer = null;
+    console.log('Verificando checkboxes en modo visor...');
     Object.keys(clusterGroups).forEach(layer => {
       const checkbox = document.getElementById(`${layer}Check`);
-      if (checkbox.checked) {
-        selectedLayersCount++;
-        selectedLayer = layer; // Guardamos la capa seleccionada
+      if (checkbox) {
+        console.log(`Checkbox ${layer}Check:`, checkbox.checked);
+        if (checkbox.checked) {
+          selectedLayersCount++;
+          selectedLayer = layer; // Guardamos la capa seleccionada
+        }
+      } else {
+        console.error(`Checkbox ${layer}Check no encontrado en el DOM`);
       }
     });
     console.log('Capas seleccionadas en modo visor:', selectedLayersCount);
