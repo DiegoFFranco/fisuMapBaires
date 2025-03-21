@@ -12,7 +12,7 @@
 </head>
 
 <body>
-  <h2 id="modeTitle">fisuMapBaiiiires - Modo Visor</h2>
+  <h2 id="modeTitle">fisuMapBaires - Modo Visor</h2>
   <button id="addPointBtn">Agregar Punto</button>
   <div id="mapContainer"></div>
   <div id="pointForm">
@@ -27,9 +27,17 @@
       <option value="via-publica">Vía Pública</option>
     </select>
     <label for="addressInput">Dirección:</label>
+    <!--
     <input type="text" id="addressInput" placeholder="Ingresá una dirección">
     <button onclick="geocodeAddress()">Buscar</button>
     <button onclick="getCurrentLocation()">Ubicación Actual</button>
+    -->
+    <div class="address-container">
+      <input type="text" id="addressInput" placeholder="Ingresá una dirección">
+      <button id="searchAddressBtn" title="Buscar dirección"><i class="fas fa-search"></i></button>
+      <button id="currentLocationBtn" title="Ubicación actual"><i class="fas fa-crosshairs"></i></button>
+    </div>
+
     <label for="userInput">Usuario:</label>
     <input type="text" id="userInput" placeholder="Anónimo">
     <label for="titleInput">Título:</label>
@@ -181,10 +189,7 @@
       console.log('DOM cargado, inicializando la app...');
       window.initializeApp();
     });
-  </script>
-
-  <script type="module" src="script.js"></script>
+  </script>  
 
 </body>
-
 </html>

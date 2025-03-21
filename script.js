@@ -255,6 +255,7 @@ function disableMapClick() {
 
 // Geocodificar una dirección
 async function geocodeAddress() {
+  console.log('Botón de búsqueda clicado, ejecutando geocodeAddress...');
   const address = document.getElementById('addressInput').value;
   if (!address) {
     alert('Ingresá una dirección para buscar.');
@@ -282,6 +283,7 @@ async function geocodeAddress() {
 
 // Obtener la ubicación actual del usuario
 function getCurrentLocation() {
+  console.log('Botón de ubicación actual clicado, ejecutando getCurrentLocation...');
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -645,6 +647,17 @@ document.getElementById('layerSelect').addEventListener('change', updateEditorLa
 // Agregar evento al botón de agregar punto
 document.getElementById('addPointBtn').addEventListener('click', toggleMode);
 document.getElementById('submitBtn').addEventListener('click', submitPoint);
+
+// Agregar eventos a los botones de búsqueda y ubicación actual
+document.getElementById('searchAddressBtn').addEventListener('click', (e) => {
+  e.preventDefault();
+  geocodeAddress();
+});
+
+document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
+  e.preventDefault();
+  getCurrentLocation();
+});
 
 // Función para inicializar la app
 window.startApp = function() {
