@@ -647,7 +647,7 @@ async function submitPoint() {
     // Actualizar la última categoría utilizada
     lastUsedCategory = category;
 
-    // Mostrar el overlay de éxito en lugar del alert
+    // Mostrar el overlay de éxito en lugar del alertaaa
     showSuccessOverlay();
 
     // Establecer hasAddedPoint como true porque se agregó un punto
