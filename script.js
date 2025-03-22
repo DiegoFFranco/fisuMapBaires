@@ -576,7 +576,7 @@ async function submitPoint() {
   let horarios = {};
   if (category === 'comercios-fisuras') {
     const sameSchedule = document.getElementById('sameSchedule').checked;
-    
+
     if (sameSchedule) {
       const apertura = document.getElementById('sameApertura').value;
       const cierre = document.getElementById('sameCierre').value;
@@ -594,7 +594,7 @@ async function submitPoint() {
       const domCerrado = document.getElementById('domCerrado').checked;
       const domApertura = domCerrado ? '' : document.getElementById('domApertura').value;
       const domCierre = domCerrado ? '' : document.getElementById('domCierre').value;
-      
+
       horarios = {
         lunesAViernes: { apertura: lvApertura, cierre: lvCierre },
         sabado: { apertura: sabApertura, cierre: sabCierre },
@@ -711,7 +711,7 @@ function toggleScheduleFields() {
   const sameSchedule = document.getElementById('sameSchedule').checked;
   const sameScheduleFields = document.getElementById('sameScheduleFields');
   const differentScheduleFields = document.getElementById('differentScheduleFields');
-  
+
   if (sameSchedule) {
     sameScheduleFields.style.display = 'block';
     differentScheduleFields.style.display = 'none';
@@ -729,7 +729,7 @@ function toggleSabadoFields() {
   const sabCerrado = document.getElementById('sabCerrado').checked;
   const sabApertura = document.getElementById('sabApertura');
   const sabCierre = document.getElementById('sabCierre');
-  
+
   if (sabCerrado) {
     sabApertura.disabled = true;
     sabCierre.disabled = true;
@@ -746,7 +746,7 @@ function toggleDomingoFields() {
   const domCerrado = document.getElementById('domCerrado').checked;
   const domApertura = document.getElementById('domApertura');
   const domCierre = document.getElementById('domCierre');
-  
+
   if (domCerrado) {
     domApertura.disabled = true;
     domCierre.disabled = true;
@@ -761,6 +761,11 @@ function toggleDomingoFields() {
 // Función para limpiar el formulario y el estado
 function resetForm() {
   console.log('Ejecutando resetForm...');
+
+  // Reiniciar las coordenadas
+  latitude = null;
+  longitude = null;
+
   // Limpiar los campos del formulario
   document.getElementById('addressInput').value = '';
   document.getElementById('userInput').value = '';
@@ -884,7 +889,7 @@ document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
 });
 
 // Función para inicializar la app
-window.startApp = function() {
+window.startApp = function () {
   console.log('Iniciando la app...');
   loadPoints();
   // Configuramos el evento de clic inicial para el modo visor
