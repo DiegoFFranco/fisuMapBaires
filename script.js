@@ -5,6 +5,8 @@ let currentImages = [];
 let currentImageIndex = -1;
 let lastUsedCategory = null; // Para rastrear la última categoría utilizada
 let lastCreatedLayer = null; // Para rastrear la última capa creada
+let previousSelectedLayers = []; // Para almacenar las capas seleccionadas antes de entrar al modo editor
+let hasAddedPoint = false; // Para rastrear si se agregó un punto en el modo editor
 
 // Inicializar el mapa
 const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
@@ -342,6 +344,7 @@ function enableMapClick() {
 }
 
 // Alternar entre modo visor y edición
+// Alternar entre modo visor y edición
 function toggleMode(category) {
   console.log('Entrando a toggleMode, isEditing:', isEditing);
   const addPointBtn = document.getElementById('addPointBtn');
@@ -356,14 +359,29 @@ function toggleMode(category) {
     document.getElementById('horariosSection').style.display = 'none'; // Ocultar el panel de horarios al volver al modo visor
     isEditing = false;
 
-    // Mostrar solo la capa del último punto creado
-    if (category) {
-      lastCreatedLayer = category;
-    }
-    if (lastCreatedLayer) {
+    // Determinar qué capas mostrar al volver al modo visor
+    if (hasAddedPoint) {
+      // Si se agregó un punto, usamos lastCreatedLayer para mostrar solo esa capa
+      if (category) {
+        lastCreatedLayer = category;
+      }
+      if (lastCreatedLayer) {
+        Object.keys(clusterGroups).forEach(layer => {
+          const checkbox = document.getElementById(`${layer}Check`);
+          if (layer === lastCreatedLayer) {
+            checkbox.checked = true;
+            clusterGroups[layer].addTo(map);
+          } else {
+            checkbox.checked = false;
+            map.removeLayer(clusterGroups[layer]);
+          }
+        });
+      }
+    } else {
+      // Si no se agregó un punto, restauramos las capas previas
       Object.keys(clusterGroups).forEach(layer => {
         const checkbox = document.getElementById(`${layer}Check`);
-        if (layer === lastCreatedLayer) {
+        if (previousSelectedLayers.includes(layer)) {
           checkbox.checked = true;
           clusterGroups[layer].addTo(map);
         } else {
@@ -389,6 +407,17 @@ function toggleMode(category) {
     document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Visor';
   } else {
     // Pasar de modo visor a modo editor
+    // Guardar las capas seleccionadas antes de entrar al modo editor
+    previousSelectedLayers = [];
+    Object.keys(clusterGroups).forEach(layer => {
+      const checkbox = document.getElementById(`${layer}Check`);
+      if (checkbox.checked) {
+        previousSelectedLayers.push(layer);
+      }
+    });
+    console.log('Capas seleccionadas guardadas en previousSelectedLayers:', previousSelectedLayers);
+    hasAddedPoint = false; // Reiniciar hasAddedPoint al entrar al modo editor
+
     document.getElementById('pointForm').style.display = 'block';
     console.log('Mostrando el formulario, #pointForm display:', document.getElementById('pointForm').style.display);
     console.log('Botones presentes - searchAddressBtn:', document.getElementById('searchAddressBtn'), 'currentLocationBtn:', document.getElementById('currentLocationBtn'));
@@ -620,6 +649,9 @@ async function submitPoint() {
 
     // Mostrar el overlay de éxito en lugar del alert
     showSuccessOverlay();
+
+    // Establecer hasAddedPoint como true porque se agregó un punto
+    hasAddedPoint = true;
 
     toggleMode(category);
     marker.openPopup();
