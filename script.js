@@ -475,6 +475,7 @@ async function submitPoint() {
     }
   }
 
+
   document.getElementById('savingMessage').style.display = 'block';
 
   let imageUrls = [];
@@ -489,10 +490,14 @@ async function submitPoint() {
 
       try {
         const base64Image = await base64Promise;
+        // Generar un sufijo aleatorio para evitar duplicados
+        const randomSuffix = Math.random().toString(36).substring(2, 5); // Ejemplo: "abc"
+        const uniqueFilename = `${file.name.split('.')[0]}-${randomSuffix}.${file.name.split('.').pop()}`; // Ejemplo: "San-Martin-1-abc.jpg"
+
         const response = await fetch('/.netlify/functions/upload-to-services', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64Image, filename: file.name })
+          body: JSON.stringify({ image: base64Image, filename: uniqueFilename }) // Usar nombre único
         });
 
         const data = await response.json();
@@ -516,6 +521,7 @@ async function submitPoint() {
       full: 'https://i.imgur.com/bLBkpWR.png'
     });
   }
+
 
   let horarios = {};
   if (category === 'comercios-fisuras') {
