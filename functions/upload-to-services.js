@@ -17,7 +17,11 @@ exports.handler = async (event) => {
           const form = new FormData();
           form.append('image', buf, name);
           form.append('key', process.env.IMGBB_API_KEY);
-          const res = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: form });
+          const res = await fetch('https://api.imgbb.com/1/upload', {
+            method: 'POST',
+            body: form,
+            headers: form.getHeaders() // No necesita X-API-Key, usa 'key' en el form
+          });
           const data = await res.json();
           if (!data.success) throw new Error('ImgBB upload failed');
           return {
@@ -35,7 +39,10 @@ exports.handler = async (event) => {
           const res = await fetch('https://postimage.me/api/1/upload', {
             method: 'POST',
             body: form,
-            headers: { 'X-API-Key': process.env.POSTIMAGE_API_KEY }
+            headers: {
+              'X-API-Key': process.env.POSTIMAGE_API_KEY,
+              ...form.getHeaders() // Agregamos los headers correctos
+            }
           });
           const data = await res.json();
           if (!data.success) throw new Error('Postimage upload failed');
@@ -52,7 +59,11 @@ exports.handler = async (event) => {
           const form = new FormData();
           form.append('source', buf, name);
           form.append('key', process.env.FREEIMAGE_API_KEY);
-          const res = await fetch('https://freeimage.host/api/1/upload', { method: 'POST', body: form });
+          const res = await fetch('https://freeimage.host/api/1/upload', {
+            method: 'POST',
+            body: form,
+            headers: form.getHeaders() // Agregamos para consistencia
+          });
           const data = await res.json();
           if (data.status_code !== 200) throw new Error('Freeimage upload failed');
           return {
@@ -71,7 +82,10 @@ exports.handler = async (event) => {
           const res = await fetch('https://allthepics.net/api/1/upload', {
             method: 'POST',
             body: form,
-            headers: { 'X-API-Key': process.env.ALLTHEPICS_API_KEY }
+            headers: {
+              'X-API-Key': process.env.ALLTHEPICS_API_KEY,
+              ...form.getHeaders() // Agregamos para consistencia
+            }
           });
           const data = await res.json();
           if (data.status_code !== 200) throw new Error('Allthepics upload failed');
