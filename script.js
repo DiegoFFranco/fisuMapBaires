@@ -3,10 +3,10 @@ let currentMarker = null;
 let isEditing = false;
 let currentImages = [];
 let currentImageIndex = -1;
-let lastUsedCategory = null; // Para rastrear la última categoría utilizada
-let lastCreatedLayer = null; // Para rastrear la última capa creada
-let previousSelectedLayers = []; // Para almacenar las capas seleccionadas antes de entrar al modo editor
-let hasAddedPoint = false; // Para rastrear si se agregó un punto en el modo editor
+let lastUsedCategory = null;
+let lastCreatedLayer = null;
+let previousSelectedLayers = [];
+let hasAddedPoint = false;
 
 // Inicializar el mapa
 const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
@@ -69,7 +69,6 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
       <div class="detail"><b>Estado:</b> ${status}</div>
   `;
 
-  // Agregar horarios si es comercios-fisuras
   if (layer === 'comercios-fisuras' && horarios) {
     popupContent += `
       <div class="detail"><b>Horarios:</b><br>
@@ -90,12 +89,12 @@ function showDetails(imageUrls, layer) {
     const photoContainer = document.getElementById('photoContainer');
     photoContainer.innerHTML = '';
     imageUrls.forEach((url, index) => {
+      const imgUrl = typeof url === 'string' ? url : url.full;
       const img = document.createElement('img');
-      img.src = url;
-      img.onclick = () => showOverlay(url, layer, imageUrls, index);
+      img.src = imgUrl;
+      img.onclick = () => showOverlay(imgUrl, layer, imageUrls, index);
       photoContainer.appendChild(img);
     });
-    // Asegurarse de que el contenedor sea visible y se desplace al principio
     photoContainer.scrollLeft = 0;
   }
 }
@@ -107,7 +106,7 @@ function hideOverlay() {
 
 // Mostrar el overlay de imágenes con navegación
 function showOverlay(url, layer, imageUrls, index) {
-  currentImages = imageUrls;
+  currentImages = imageUrls.map(url => typeof url === 'string' ? url : url.full);
   currentImageIndex = index;
   const overlay = document.getElementById('imageOverlay');
   overlay.innerHTML = `
@@ -136,39 +135,32 @@ function hideDetails() {
   document.getElementById('pointDetails').style.display = 'none';
 }
 
-// Cargar puntos desde Firestore (usando una sola colección 'points')
+// Cargar puntos desde Firestore
 async function loadPoints() {
   console.log('Iniciando carga de puntos...');
-  // Limpiar todos los clusters
   Object.keys(clusterGroups).forEach(layer => {
     clusterGroups[layer].clearLayers();
-    document.getElementById(`${layer}Count`).textContent = `(0)`; // Resetear conteos
+    document.getElementById(`${layer}Count`).textContent = `(0)`;
   });
 
   try {
-    console.log('Conectando a Firestore...');
     const colRef = collection(db, 'points');
-    console.log('Obteniendo documentos de la colección "points"...');
     const snapshot = await getDocs(colRef);
     console.log('Documentos obtenidos:', snapshot.docs.length);
 
     const counts = {
-      'fisuras': 0,
-      'limpieza': 0,
-      'trapitos': 0,
-      'narcomenudeo': 0,
-      'casas-tomadas': 0,
-      'comercios-fisuras': 0,
-      'via-publica': 0,
-      'comisarias': 0
+      'fisuras': 0, 'limpieza': 0, 'trapitos': 0, 'narcomenudeo': 0,
+      'casas-tomadas': 0, 'comercios-fisuras': 0, 'via-publica': 0, 'comisarias': 0
     };
 
     const features = snapshot.docs.map(doc => {
       const data = doc.data();
-      const category = data.properties?.category || 'fisuras'; // Por defecto 'fisuras' si no tiene categoría
-      counts[category]++; // Incrementar el conteo para la categoría
+      const category = data.properties?.category || 'fisuras';
+      counts[category]++;
 
-      console.log('Procesando documento:', doc.id, data);
+      const imageUrls = (data.properties?.imageUrls || data.imageUrls || []).map(url =>
+        typeof url === 'string' ? url : url.full
+      );
 
       return {
         type: data.type || 'Feature',
@@ -178,20 +170,16 @@ async function loadPoints() {
           description: data.properties?.description || data.description || '',
           user: data.properties?.user || data.user || 'Anónimo',
           address: data.properties?.address || data.address || 'Sin dirección',
-          imageUrls: data.properties?.imageUrls || data.imageUrls || [],
+          imageUrls: imageUrls,
           category: category,
-          status: data.properties?.status || 'verificado', // Por defecto verificado para puntos antiguos
-          horarios: data.properties?.horarios || {}, // Por defecto {} para puntos que no tienen horarios
+          status: data.properties?.status || 'verificado',
+          horarios: data.properties?.horarios || {},
           id: doc.id
         }
       };
     });
 
-    const geojson = {
-      type: 'FeatureCollection',
-      features: features
-    };
-
+    const geojson = { type: 'FeatureCollection', features: features };
     console.log('GeoJSON generado:', geojson);
 
     L.geoJSON(geojson, {
@@ -201,19 +189,17 @@ async function loadPoints() {
       },
       onEachFeature: (feature, layerFeature) => {
         const { name, description, user, address, imageUrls, category, status, horarios } = feature.properties;
-        layerFeature.bindPopup(createPopupContent(name, user, description, address, category, imageUrls || [], status, horarios), { className: '' });
+        layerFeature.bindPopup(createPopupContent(name, user, description, address, category, imageUrls, status, horarios), { className: '' });
         layerFeature.on('click', (e) => {
-          if (!isEditing) { // Solo mostrar detalles si no estamos en modo editor
-            showDetails(imageUrls || [], category);
+          if (!isEditing) {
+            showDetails(imageUrls, category);
           }
           L.DomEvent.stopPropagation(e);
         });
-        // Agregar el marcador al cluster correspondiente
         clusterGroups[category].addLayer(layerFeature);
       }
     });
 
-    // Actualizar los conteos
     Object.keys(counts).forEach(layer => {
       document.getElementById(`${layer}Count`).textContent = `(${counts[layer]})`;
       if (document.getElementById(`${layer}Check`).checked) {
@@ -291,28 +277,19 @@ function getCurrentLocation() {
 function updateEditorLayer() {
   if (isEditing) {
     const selectedLayer = document.getElementById('layerSelect').value;
-
-    // Asegurarse de que todas las capas se eliminen del mapa primero
     Object.keys(clusterGroups).forEach(layer => {
       if (map.hasLayer(clusterGroups[layer])) {
         map.removeLayer(clusterGroups[layer]);
       }
     });
-
-    // Añadir solo la capa seleccionada
     clusterGroups[selectedLayer].addTo(map);
-
-    // Actualizar el marcador si existe
     if (currentMarker && latitude && longitude) {
       map.removeLayer(currentMarker);
       currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
     }
-
-    // Mostrar/ocultar la sección de horarios según la categoría
     const horariosSection = document.getElementById('horariosSection');
     if (selectedLayer === 'comercios-fisuras') {
       horariosSection.style.display = 'block';
-      // Inicializar el estado del formulario de horarios
       toggleScheduleFields();
     } else {
       horariosSection.style.display = 'none';
@@ -322,7 +299,7 @@ function updateEditorLayer() {
 
 // Habilitar el evento de clic en el mapa para modo editor
 function enableMapClick() {
-  map.off('click'); // Eliminar cualquier evento de clic existente
+  map.off('click');
   map.on('click', async (event) => {
     if (isEditing) {
       latitude = event.latlng.lat;
@@ -330,7 +307,6 @@ function enableMapClick() {
       if (currentMarker) map.removeLayer(currentMarker);
       const selectedLayer = document.getElementById('layerSelect').value;
       currentMarker = L.marker([latitude, longitude], { icon: icons[selectedLayer] }).addTo(map);
-
       try {
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
         const data = await response.json();
@@ -344,24 +320,20 @@ function enableMapClick() {
 }
 
 // Alternar entre modo visor y edición
-// Alternar entre modo visor y edición
 function toggleMode(category) {
   console.log('Entrando a toggleMode, isEditing:', isEditing);
   const addPointBtn = document.getElementById('addPointBtn');
 
   if (isEditing) {
-    // Pasar de modo editor a modo visor
     document.getElementById('pointForm').style.display = 'none';
     document.getElementById('layerControls').style.display = 'block';
     document.getElementById('selectAllBtn').style.display = 'inline-block';
     document.getElementById('deselectAllBtn').style.display = 'inline-block';
-    addPointBtn.textContent = 'Agregar Punto'; // Restaurar el texto del botón
-    document.getElementById('horariosSection').style.display = 'none'; // Ocultar el panel de horarios al volver al modo visor
+    addPointBtn.textContent = 'Agregar Punto';
+    document.getElementById('horariosSection').style.display = 'none';
     isEditing = false;
 
-    // Determinar qué capas mostrar al volver al modo visor
     if (hasAddedPoint) {
-      // Si se agregó un punto, usamos lastCreatedLayer para mostrar solo esa capa
       if (category) {
         lastCreatedLayer = category;
       }
@@ -378,7 +350,6 @@ function toggleMode(category) {
         });
       }
     } else {
-      // Si no se agregó un punto, restauramos las capas previas
       Object.keys(clusterGroups).forEach(layer => {
         const checkbox = document.getElementById(`${layer}Check`);
         if (previousSelectedLayers.includes(layer)) {
@@ -391,23 +362,18 @@ function toggleMode(category) {
       });
     }
 
-    // Deshabilitar el evento de clic para agregar puntos y configurar el modo visor
-    map.off('click'); // Eliminar cualquier evento de clic existente
+    map.off('click');
     map.on('click', (event) => {
-      hideDetails(); // En modo visor, solo ocultar detalles al hacer clic
+      hideDetails();
     });
 
-    // Eliminar el marcador actual si existe
     if (currentMarker) {
       map.removeLayer(currentMarker);
       currentMarker = null;
     }
 
-    // Actualizar el título del modo
     document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Visor';
   } else {
-    // Pasar de modo visor a modo editor
-    // Guardar las capas seleccionadas antes de entrar al modo editor
     previousSelectedLayers = [];
     Object.keys(clusterGroups).forEach(layer => {
       const checkbox = document.getElementById(`${layer}Check`);
@@ -416,7 +382,7 @@ function toggleMode(category) {
       }
     });
     console.log('Capas seleccionadas guardadas en previousSelectedLayers:', previousSelectedLayers);
-    hasAddedPoint = false; // Reiniciar hasAddedPoint al entrar al modo editor
+    hasAddedPoint = false;
 
     document.getElementById('pointForm').style.display = 'block';
     console.log('Mostrando el formulario, #pointForm display:', document.getElementById('pointForm').style.display);
@@ -425,19 +391,15 @@ function toggleMode(category) {
     document.getElementById('layerControls').style.display = 'none';
     document.getElementById('selectAllBtn').style.display = 'none';
     document.getElementById('deselectAllBtn').style.display = 'none';
-    addPointBtn.textContent = 'Volver a Visor'; // Cambiar el texto del botón a "Volver a Visor"
-    document.getElementById('pointDetails').style.display = 'none'; // Ocultar el panel de fotos
+    addPointBtn.textContent = 'Volver a Visor';
+    document.getElementById('pointDetails').style.display = 'none';
 
-    // Cerrar cualquier popup abierto en el mapa
     map.closePopup();
 
-    // Llamar a resetForm antes de establecer isEditing = true
     resetForm();
 
-    // Ahora establecemos isEditing = true
     isEditing = true;
 
-    // Mostrar solo la capa seleccionada en layerSelect
     const selectedCategory = document.getElementById('layerSelect').value;
     Object.keys(clusterGroups).forEach(layer => {
       if (layer === selectedCategory) {
@@ -447,10 +409,8 @@ function toggleMode(category) {
       }
     });
 
-    // Habilitar el evento de clic para agregar puntos en modo editor
     enableMapClick();
 
-    // Asegurarse de que el panel de horarios se muestre u oculte según la categoría seleccionada
     const horariosSection = document.getElementById('horariosSection');
     if (selectedCategory === 'comercios-fisuras') {
       horariosSection.style.display = 'block';
@@ -459,34 +419,26 @@ function toggleMode(category) {
       horariosSection.style.display = 'none';
     }
 
-    // Actualizar el título del modo
     document.getElementById('modeTitle').textContent = 'fisuMapBaires - Modo Editor';
   }
 }
 
-// Función para mostrar el overlay de éxito
+// Mostrar el overlay de éxito
 function showSuccessOverlay() {
   const successOverlay = document.getElementById('successOverlay');
   successOverlay.style.display = 'flex';
-
-  // Desaparecer automáticamente después de 3 segundos
   setTimeout(() => {
     successOverlay.style.display = 'none';
   }, 3000);
-
-  // También permitir ocultar con clic
   successOverlay.addEventListener('click', function hideOnClick() {
     successOverlay.style.display = 'none';
     successOverlay.removeEventListener('click', hideOnClick);
   });
 }
 
-
-// Guardar un punto en Firestore (usando una sola colección 'points')
+// Guardar un punto en Firestore
 async function submitPoint() {
   const submitBtn = document.getElementById('submitBtn');
-
-  // Deshabilitar el botón de envío para evitar múltiples clics
   submitBtn.disabled = true;
 
   const category = document.getElementById('layerSelect').value;
@@ -497,28 +449,21 @@ async function submitPoint() {
   const photoInput = document.getElementById('photoInput');
   const files = photoInput.files;
 
-  // Validar coordenadas
   if (!latitude || !longitude) {
     alert('Hacé clic en el mapa, buscá una dirección o usá tu ubicación actual.');
     submitBtn.disabled = false;
     return;
   }
-
-  // Validar título
   if (!title) {
     alert('Ingresá un título para el punto.');
     submitBtn.disabled = false;
     return;
   }
-
-  // Validar número de archivos
   if (files.length > 5) {
     alert('Máximo 5 fotos permitidas.');
     submitBtn.disabled = false;
     return;
   }
-
-  // Validar formatos de los archivos
   if (files.length > 0) {
     for (const file of files) {
       const validTypes = ['image/jpeg', 'image/png'];
@@ -530,13 +475,11 @@ async function submitPoint() {
     }
   }
 
-  // Si todas las validaciones pasan, ahora sí mostramos el mensaje "guardando punto"
   document.getElementById('savingMessage').style.display = 'block';
 
   let imageUrls = [];
   if (files.length > 0) {
     for (const file of files) {
-      // Convertir la imagen a base64
       const reader = new FileReader();
       const base64Promise = new Promise((resolve, reject) => {
         reader.onload = () => resolve(reader.result);
@@ -546,12 +489,10 @@ async function submitPoint() {
 
       try {
         const base64Image = await base64Promise;
-        const response = await fetch('/.netlify/functions/upload-to-imgur', {
+        const response = await fetch('/.netlify/functions/upload-to-services', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ image: base64Image })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Image, filename: file.name })
         });
 
         const data = await response.json();
@@ -559,9 +500,9 @@ async function submitPoint() {
           throw new Error(data.error || 'Error al subir la imagen');
         }
 
-        imageUrls.push(data.imageUrl);
+        imageUrls.push(data); // {thumbnail, medium, full}
       } catch (e) {
-        console.error('Error al subir a Imgur:', e);
+        console.error('Error al subir imagen:', e);
         alert(`Error subiendo una foto: ${e.message}. Revisá los formatos e intentá de nuevo.`);
         submitBtn.disabled = false;
         document.getElementById('savingMessage').style.display = 'none';
@@ -569,14 +510,16 @@ async function submitPoint() {
       }
     }
   } else {
-    imageUrls.push('https://i.imgur.com/bLBkpWR.png'); // Imagen por defecto
+    imageUrls.push({
+      thumbnail: 'https://i.imgur.com/bLBkpWR.png',
+      medium: 'https://i.imgur.com/bLBkpWR.png',
+      full: 'https://i.imgur.com/bLBkpWR.png'
+    });
   }
 
-  // Construir el objeto horarios si la categoría es comercios-fisuras
   let horarios = {};
   if (category === 'comercios-fisuras') {
     const sameSchedule = document.getElementById('sameSchedule').checked;
-
     if (sameSchedule) {
       const apertura = document.getElementById('sameApertura').value;
       const cierre = document.getElementById('sameCierre').value;
@@ -594,7 +537,6 @@ async function submitPoint() {
       const domCerrado = document.getElementById('domCerrado').checked;
       const domApertura = domCerrado ? '' : document.getElementById('domApertura').value;
       const domCierre = domCerrado ? '' : document.getElementById('domCierre').value;
-
       horarios = {
         lunesAViernes: { apertura: lvApertura, cierre: lvCierre },
         sabado: { apertura: sabApertura, cierre: sabCierre },
@@ -604,34 +546,34 @@ async function submitPoint() {
   }
 
   const pointData = {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [longitude, latitude] },
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [longitude, latitude] },
     properties: {
       name: title,
       description: description,
       user: user,
-      userId: 'user123', // Sin autenticación por ahora
+      userId: 'user123',
       address: address || 'Sin dirección',
       imageUrls: imageUrls,
       timestamp: serverTimestamp(),
-      category: category, // Agregamos el campo category
-      status: 'temporal', // Agregamos el campo status
-      horarios: horarios // Incluimos horarios (será {} si no es comercios-fisuras)
+      category: category,
+      status: 'temporal',
+      horarios: horarios
     }
   };
 
   console.log('Punto enviado:', pointData);
 
   try {
-    const colRef = collection(db, 'points'); // Guardamos en la colección 'points'
+    const colRef = collection(db, 'points');
     await addDoc(colRef, pointData);
     console.log('Punto guardado en Firestore:', pointData);
 
     const marker = L.marker([latitude, longitude], { icon: icons[category] });
-    marker.bindPopup(createPopupContent(title, user, description, address, category, imageUrls, 'temporal', horarios), { className: '' });
+    marker.bindPopup(createPopupContent(title, user, description, address, category, imageUrls.map(url => url.full), 'temporal', horarios), { className: '' });
     marker.on('click', (e) => {
-      if (!isEditing) { // Solo mostrar detalles si no estamos en modo editor
-        showDetails(imageUrls, category);
+      if (!isEditing) {
+        showDetails(imageUrls.map(url => url.full), category);
       }
       L.DomEvent.stopPropagation(e);
     });
@@ -644,24 +586,18 @@ async function submitPoint() {
     const currentCount = parseInt(countElement.textContent.replace(/[()]/g, '')) || 0;
     countElement.textContent = `(${currentCount + 1})`;
 
-    // Actualizar la última categoría utilizada
     lastUsedCategory = category;
-
-    // Mostrar el overlay de éxito en lugar del alertaaa
     showSuccessOverlay();
-
-    // Establecer hasAddedPoint como true porque se agregó un punto
     hasAddedPoint = true;
 
     toggleMode(category);
     marker.openPopup();
-    showDetails(imageUrls, category);
+    showDetails(imageUrls.map(url => url.full), category);
   } catch (error) {
     console.error('Error al guardar en Firestore:', error);
     alert(`Error al enviar: ${error.message}`);
   }
 
-  // Rehabilitar el botón y ocultar el mensaje de guardado al final
   submitBtn.disabled = false;
   document.getElementById('savingMessage').style.display = 'none';
 }
@@ -680,7 +616,6 @@ function updateLayers() {
       }
     }
   });
-  // Si no hay capas seleccionadas, ocultar el panel de fotos
   const anyLayerSelected = Object.keys(clusterGroups).some(layer => document.getElementById(`${layer}Check`).checked);
   if (!anyLayerSelected) {
     hideDetails();
@@ -718,7 +653,6 @@ function toggleScheduleFields() {
   } else {
     sameScheduleFields.style.display = 'none';
     differentScheduleFields.style.display = 'block';
-    // Asegurarse de que los campos de sábado y domingo se actualicen según los checkboxes
     toggleSabadoFields();
     toggleDomingoFields();
   }
@@ -761,24 +695,16 @@ function toggleDomingoFields() {
 // Función para limpiar el formulario y el estado
 function resetForm() {
   console.log('Ejecutando resetForm...');
-
-  // Reiniciar las coordenadas
   latitude = null;
   longitude = null;
-
-  // Limpiar los campos del formulario
   document.getElementById('addressInput').value = '';
   document.getElementById('userInput').value = '';
   document.getElementById('titleInput').value = '';
   document.getElementById('descriptionInput').value = '';
   document.getElementById('photoInput').value = '';
 
-  // Determinar la categoría a usar en layerSelect
-  let selectedCategory = 'fisuras'; // Valor predeterminado
-
+  let selectedCategory = 'fisuras';
   if (!isEditing) {
-    // Estamos entrando al modo editor desde el modo visor
-    // Contar cuántas capas están seleccionadas en el modo visor
     let selectedLayersCount = 0;
     let selectedLayer = null;
     console.log('Verificando checkboxes en modo visor...');
@@ -788,7 +714,7 @@ function resetForm() {
         console.log(`Checkbox ${layer}Check:`, checkbox.checked);
         if (checkbox.checked) {
           selectedLayersCount++;
-          selectedLayer = layer; // Guardamos la capa seleccionada
+          selectedLayer = layer;
         }
       } else {
         console.error(`Checkbox ${layer}Check no encontrado en el DOM`);
@@ -799,32 +725,25 @@ function resetForm() {
     console.log('lastUsedCategory:', lastUsedCategory);
 
     if (selectedLayersCount === 1) {
-      // Hay exactamente 1 capa seleccionada
       if (selectedLayer === lastUsedCategory) {
-        // La capa seleccionada es igual a lastUsedCategory
         selectedCategory = lastUsedCategory;
         console.log('Usando lastUsedCategory (misma capa seleccionada):', selectedCategory);
       } else {
-        // La capa seleccionada es distinta a lastUsedCategory
         selectedCategory = selectedLayer;
         console.log('Usando capa seleccionada en modo visor (distinta a lastUsedCategory):', selectedCategory);
       }
     } else {
-      // Hay 0 o más de 1 capa seleccionada, usamos 'fisuras'
       selectedCategory = 'fisuras';
       console.log('Usando categoría predeterminada (0 o más de 1 capa seleccionada):', selectedCategory);
     }
   } else if (lastUsedCategory) {
-    // Si estamos en modo editor (por ejemplo, después de un error), usamos la última categoría
     selectedCategory = lastUsedCategory;
     console.log('Usando lastUsedCategory en modo editor:', selectedCategory);
   }
 
-  // Establecer la categoría en layerSelect
   document.getElementById('layerSelect').value = selectedCategory;
   console.log('layerSelect establecido a:', selectedCategory);
 
-  // Limpiar los campos de horarios (para comercios-fisuras)
   const sameSchedule = document.getElementById('sameSchedule');
   const sameApertura = document.getElementById('sameApertura');
   const sameCierre = document.getElementById('sameCierre');
@@ -837,7 +756,6 @@ function resetForm() {
   const domApertura = document.getElementById('domApertura');
   const domCierre = document.getElementById('domCierre');
 
-  // Resetear los valores de los horarios
   sameSchedule.checked = false;
   sameApertura.value = '';
   sameCierre.value = '';
@@ -850,7 +768,6 @@ function resetForm() {
   domApertura.value = '';
   domCierre.value = '';
 
-  // Asegurarse de que el panel de horarios se muestre u oculte según la categoría seleccionada
   const horariosSection = document.getElementById('horariosSection');
   if (selectedCategory === 'comercios-fisuras') {
     horariosSection.style.display = 'block';
@@ -859,7 +776,6 @@ function resetForm() {
     horariosSection.style.display = 'none';
   }
 
-  // Confirmar que los campos se limpiaron (para depuración)
   console.log('Formulario limpiado:');
   console.log('addressInput:', document.getElementById('addressInput').value);
   console.log('userInput:', document.getElementById('userInput').value);
@@ -892,9 +808,8 @@ document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
 window.startApp = function () {
   console.log('Iniciando la app...');
   loadPoints();
-  // Configuramos el evento de clic inicial para el modo visor
   map.on('click', (event) => {
-    hideDetails(); // En modo visor, solo ocultar detalles al hacer clic
+    hideDetails();
   });
 };
 
