@@ -12,26 +12,6 @@ exports.handler = async (event) => {
 
     const services = [
       {
-        name: 'imgbb',
-        fn: async (buf, name) => {
-          const form = new FormData();
-          form.append('image', buf, name);
-          form.append('key', process.env.IMGBB_API_KEY);
-          const res = await fetch('https://api.imgbb.com/1/upload', {
-            method: 'POST',
-            body: form,
-            headers: form.getHeaders()
-          });
-          const data = await res.json();
-          if (!data.success) throw new Error('ImgBB upload failed');
-          return {
-            thumbnail: data.data.thumb.url,
-            medium: data.data.medium ? data.data.medium.url : data.data.url,
-            full: data.data.url
-          };
-        }
-      },
-      {
         name: 'postimage',
         fn: async (buf, name) => {
           const form = new FormData();
@@ -42,13 +22,15 @@ exports.handler = async (event) => {
             headers: {
               'X-API-Key': process.env.POSTIMAGE_API_KEY,
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+              'Accept': 'application/json, text/plain, */*',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Referer': 'https://postimage.me/', // Simula que vienes del sitio
               ...form.getHeaders()
             }
           });
-          // Loguear respuesta cruda para debug
           const rawResponse = await res.text();
-          console.log(`Respuesta cruda de Postimage.me: ${rawResponse.substring(0, 500)}`); // Limitamos a 500 caracteres por si es larga
-          const data = JSON.parse(rawResponse); // Intentamos parsear manualmente
+          console.log(`Respuesta cruda de Postimage.me: ${rawResponse.substring(0, 500)}`);
+          const data = JSON.parse(rawResponse);
           if (!data.success) throw new Error('Postimage upload failed');
           return {
             thumbnail: data.image.thumb.url,
@@ -56,50 +38,8 @@ exports.handler = async (event) => {
             full: data.image.url
           };
         }
-      },
-      {
-        name: 'freeimage',
-        fn: async (buf, name) => {
-          const form = new FormData();
-          form.append('source', buf, name);
-          form.append('key', process.env.FREEIMAGE_API_KEY);
-          const res = await fetch('https://freeimage.host/api/1/upload', {
-            method: 'POST',
-            body: form,
-            headers: form.getHeaders()
-          });
-          const data = await res.json();
-          if (data.status_code !== 200) throw new Error('Freeimage upload failed');
-          return {
-            thumbnail: data.image.thumb.url,
-            medium: data.image.medium ? data.image.medium.url : data.image.url,
-            full: data.image.url
-          };
-        }
-      },
-      {
-        name: 'allthepics',
-        fn: async (buf, name) => {
-          const form = new FormData();
-          form.append('source', buf, name);
-          form.append('format', 'json');
-          const res = await fetch('https://allthepics.net/api/1/upload', {
-            method: 'POST',
-            body: form,
-            headers: {
-              'X-API-Key': process.env.ALLTHEPICS_API_KEY,
-              ...form.getHeaders()
-            }
-          });
-          const data = await res.json();
-          if (data.status_code !== 200) throw new Error('Allthepics upload failed');
-          return {
-            thumbnail: data.image.thumb.url,
-            medium: data.image.medium ? data.image.medium.url : data.image.url,
-            full: data.image.url
-          };
-        }
       }
+      // Quitaste las claves de los otros servicios, así que solo dejamos Postimage por ahora
     ];
 
     for (const service of services) {
