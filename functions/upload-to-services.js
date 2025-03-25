@@ -23,7 +23,11 @@ exports.handler = async (event) => {
             headers: form.getHeaders()
           });
           const data = await res.json();
-          if (!data.success) throw new Error('ImgBB upload failed');
+          // Loguear la respuesta completa si falla
+          if (!data.success) {
+            console.log(`Error en ImgBB: ${JSON.stringify(data)}`);
+            throw new Error('ImgBB upload failed');
+          }
           return {
             thumbnail: data.data.thumb.url,
             medium: data.data.medium ? data.data.medium.url : data.data.url,
