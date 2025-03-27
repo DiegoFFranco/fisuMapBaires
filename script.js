@@ -558,14 +558,13 @@ async function submitPoint() {
       name: title,
       description: description,
       user: user,
-      userId: 'user123',
       address: address || 'Sin dirección',
       imageUrls: imageUrls,
       timestamp: serverTimestamp(),
       category: category,
       status: 'temporal',
       horarios: horarios
-    }
+    }  
   };
 
   console.log('Punto enviado:', pointData);
