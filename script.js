@@ -56,13 +56,14 @@ Object.keys(layersConfig).forEach(layer => {
 });
 
 // Crear el contenido del popup
-function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios) {
+function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios, id) {
   const isLightBackground = ['yellow', 'pink', 'orange'].includes(layersConfig[layer].color);
   const popupColor = layersConfig[layer].color;
   const cleanDescription = (description || '').replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
   let popupContent = `
     <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${popupColor};">
       <span class="title">${title}</span>
+      <div class="detail"><b>ID:</b> ${id}</div>
       <div class="detail"><b>Usuario:</b> ${user}</div>
       <div class="detail"><b>Descripción:</b> ${cleanDescription || 'Sin descripción'}</div>
       <div class="detail"><b>Dirección:</b> ${address || 'Sin dirección'}</div>
@@ -188,7 +189,7 @@ async function loadPoints() {
         return L.marker(latlng, { icon: icons[category] });
       },
       onEachFeature: (feature, layerFeature) => {
-        const { name, description, user, address, imageUrls, category, status, horarios } = feature.properties;
+        const { name, description, user, address, imageUrls, category, status, horarios, id } = feature.properties;
         layerFeature.bindPopup(createPopupContent(name, user, description, address, category, imageUrls, status, horarios), { className: '' });
         layerFeature.on('click', (e) => {
           if (!isEditing) {
@@ -557,8 +558,7 @@ async function submitPoint() {
     properties: {
       name: title,
       description: description,
-      user: user,
-      userId: 'user123',
+      user: user,      
       address: address || 'Sin dirección',
       imageUrls: imageUrls,
       timestamp: serverTimestamp(),
@@ -572,7 +572,11 @@ async function submitPoint() {
 
   try {
     const colRef = collection(db, 'points');
-    await addDoc(colRef, pointData);
+    const docRef = await addDoc(colRef, pointData);
+    const id = docRef.id;
+    console.log('Punto guardado en Firestore con Id:', id);
+
+    ///await addDoc(colRef, pointData);
     console.log('Punto guardado en Firestore:', pointData);
 
     const marker = L.marker([latitude, longitude], { icon: icons[category] });
