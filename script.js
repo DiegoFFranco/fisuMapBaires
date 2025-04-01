@@ -156,6 +156,10 @@ async function loadPoints() {
 
     const features = snapshot.docs.map(doc => {
       const data = doc.data();
+      console.log(`Documento ID: ${doc.id}`);
+      console.log(`Datos del documento:`, data);
+      // Resto del código...
+
       const category = data.properties?.category || 'fisuras';
       counts[category]++;
 
