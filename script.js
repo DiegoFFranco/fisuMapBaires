@@ -194,7 +194,7 @@ async function loadPoints() {
       },
       onEachFeature: (feature, layerFeature) => {
         const { name, description, user, address, imageUrls, category, status, horarios, id } = feature.properties;
-        layerFeature.bindPopup(createPopupContent(name, user, description, address, category, imageUrls, status, horarios), { className: '' });
+        layerFeature.bindPopup(createPopupContent(name, user, description, address, category, imageUrls, status, horarios, id), { className: '' });
         layerFeature.on('click', (e) => {
           if (!isEditing) {
             showDetails(imageUrls, category);
