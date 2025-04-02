@@ -64,7 +64,7 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   //nuevo codigo
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const processedDescription = cleanDescription.replace(urlRegex, (url) => {
-    return '<a href="${url}" target="_blank">Leer mas</a>';
+    return `<a href="${url}" target="_blank">Leer más</a>`;
   });
   //nuevo codigo fin
 
