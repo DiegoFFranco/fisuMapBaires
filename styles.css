@@ -226,7 +226,19 @@ body {
 }
 
 .custom-popup .detail {
-  font-size: 14px;
+  font-size: 14px;  
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  max-width: 280px;
+}
+
+.custom-popup .detail a {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  color: #1e90ff; /* Color opcional para destacar los enlaces */
+  text-decoration: underline;
 }
 
 .custom-popup .detail b {

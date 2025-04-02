@@ -60,12 +60,21 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   const isLightBackground = ['yellow', 'pink', 'orange'].includes(layersConfig[layer].color);
   const popupColor = layersConfig[layer].color;
   const cleanDescription = (description || '').replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
+  
+  //nuevo codigo
+  const processedDescription = cleanDescription.replace(urlRegex, (url) => {
+    return '<a href="${url}" target="_blank">Leer mas</a>';
+  });
+  //nuevo codigo fin
+
+  //<div class="detail"><b>Descripción:</b> ${cleanDescription || 'Sin descripcion'}</div>
+
   let popupContent = `
     <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${popupColor};">
       <span class="title">${title}</span>
       <div class="detail"><b>ID:</b> ${id}</div>
       <div class="detail"><b>Usuario:</b> ${user}</div>
-      <div class="detail"><b>Descripción:</b> ${cleanDescription || 'Sin descripcion'}</div>
+      <div class="detail"><b>Descripción:</b> ${processedDescription || 'Sin descripcion'}</div>
       <div class="detail"><b>Dirección:</b> ${address || 'Sin direccion'}</div>
       <div class="detail"><b>Estado:</b> ${status}</div>
   `;
@@ -82,6 +91,21 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   popupContent += `</div><style>.leaflet-popup-tip { background-color: ${popupColor}; }</style>`;
   return popupContent;
 }
+
+//nuevo codigo
+function truncateUrl(url, maxLength = 30) {
+  if (url.length > maxLength) {
+    return url.substring(0, maxLength - 3) + '...';
+  }
+  return url;
+}
+
+const processedDescription = cleanDescription.replace(urlRegex, (url) => {
+  const truncated = truncateUrl(url);
+  return `<a href="${url}" target="_blank">${truncated}</a>`;
+});
+
+//nuevo codigo fin
 
 // Mostrar detalles de las imágenes
 function showDetails(imageUrls, layer) {
