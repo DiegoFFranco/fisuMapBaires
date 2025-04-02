@@ -447,7 +447,7 @@ async function submitPoint() {
   submitBtn.disabled = true;
 
   const category = document.getElementById('layerSelect').value;
-  const user = document.getElementById('userInput').value || 'Anónimo';
+  const user = document.getElementById('userInput').value || 'Anonimo';
   const title = document.getElementById('titleInput').value;
   const description = document.getElementById('descriptionInput').value;
   const address = document.getElementById('addressInput').value;
@@ -569,7 +569,7 @@ async function submitPoint() {
       category: category,
       status: 'temporal',
       horarios: horarios
-    }
+    }  
   };
 
   console.log('Punto enviado:', pointData);
