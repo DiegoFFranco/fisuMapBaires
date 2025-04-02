@@ -65,8 +65,8 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
       <span class="title">${title}</span>
       <div class="detail"><b>ID:</b> ${id}</div>
       <div class="detail"><b>Usuario:</b> ${user}</div>
-      <div class="detail"><b>Descripción:</b> ${cleanDescription || 'Sin descripción'}</div>
-      <div class="detail"><b>Dirección:</b> ${address || 'Sin dirección'}</div>
+      <div class="detail"><b>Descripción:</b> ${cleanDescription || 'Sin descripcion'}</div>
+      <div class="detail"><b>Dirección:</b> ${address || 'Sin direccion'}</div>
       <div class="detail"><b>Estado:</b> ${status}</div>
   `;
 
@@ -173,8 +173,8 @@ async function loadPoints() {
         properties: {
           name: data.properties?.name || data.name || 'Sin título',
           description: data.properties?.description || data.description || '',
-          user: data.properties?.user || data.user || 'Anónimo',
-          address: data.properties?.address || data.address || 'Sin dirección',
+          user: data.properties?.user || data.user || 'Anonimo',
+          address: data.properties?.address || data.address || 'Sin direccion',
           imageUrls: imageUrls,
           category: category,
           status: data.properties?.status || 'verificado',
@@ -563,7 +563,7 @@ async function submitPoint() {
       name: title,
       description: description,
       user: user,      
-      address: address || 'Sin dirección',
+      address: address || 'Sin direccion',
       imageUrls: imageUrls,
       timestamp: serverTimestamp(),
       category: category,
