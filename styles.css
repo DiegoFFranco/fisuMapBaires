@@ -237,7 +237,9 @@ body {
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal;
-  color: #1e90ff; /* Color opcional para destacar los enlaces */
+  font-size: 14px;
+  font-weight: bolder;
+  color: #18009e; /* Color opcional para destacar los enlaces */
   text-decoration: underline;
 }
 
