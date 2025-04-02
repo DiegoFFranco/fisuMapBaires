@@ -62,6 +62,7 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   const cleanDescription = (description || '').replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
   
   //nuevo codigo
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
   const processedDescription = cleanDescription.replace(urlRegex, (url) => {
     return '<a href="${url}" target="_blank">Leer mas</a>';
   });
@@ -92,7 +93,7 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   return popupContent;
 }
 
-//nuevo codigo
+/*nuevo codigo
 function truncateUrl(url, maxLength = 30) {
   if (url.length > maxLength) {
     return url.substring(0, maxLength - 3) + '...';
@@ -106,7 +107,7 @@ const processedDescription = cleanDescription.replace(urlRegex, (url) => {
 });
 
 //nuevo codigo fin
-
+*/
 // Mostrar detalles de las imágenes
 function showDetails(imageUrls, layer) {
   if (!isEditing) {
