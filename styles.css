@@ -213,9 +213,11 @@ body {
 }
 
 .custom-popup {
-  max-width: 300px;
+  width: 300px;
   padding: 10px;
   border: none;
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .custom-popup .title {
@@ -229,8 +231,7 @@ body {
   font-size: 14px;  
   word-wrap: break-word;
   overflow-wrap: break-word;
-  white-space: normal;
-  max-width: 280px;
+  white-space: normal;  
 }
 
 .custom-popup .detail a {
