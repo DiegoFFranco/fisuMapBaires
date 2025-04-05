@@ -8,6 +8,14 @@ let lastCreatedLayer = null;
 let previousSelectedLayers = [];
 let hasAddedPoint = false;
 
+// Función para truncar URLs largas
+function truncateUrl(url, maxLength = 30) {
+  if (url.length > maxLength) {
+    return url.substring(0, maxLength - 3) + '...';
+  }
+  return url;
+}
+
 // Inicializar el mapa
 const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -61,14 +69,14 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   const popupColor = layersConfig[layer].color;
   const cleanDescription = (description || '').replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
   
-  //nuevo codigo
+  // Expresión regular para detectar URLs
   const urlRegex = /(https?:\/\/[^\s]+)/g;
+  
+  // Reemplazar URLs por enlaces acortados
   const processedDescription = cleanDescription.replace(urlRegex, (url) => {
-    return `<a href="${url}" target="_blank">Leer más</a>`;
+    const truncated = truncateUrl(url);
+    return `<a href="${url}" target="_blank">${truncated}</a>`;
   });
-  //nuevo codigo fin
-
-  //<div class="detail"><b>Descripción:</b> ${cleanDescription || 'Sin descripcion'}</div>
 
   let popupContent = `
     <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${popupColor};">
@@ -93,21 +101,7 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   return popupContent;
 }
 
-/*nuevo codigo
-function truncateUrl(url, maxLength = 30) {
-  if (url.length > maxLength) {
-    return url.substring(0, maxLength - 3) + '...';
-  }
-  return url;
-}
 
-const processedDescription = cleanDescription.replace(urlRegex, (url) => {
-  const truncated = truncateUrl(url);
-  return `<a href="${url}" target="_blank">${truncated}</a>`;
-});
-
-//nuevo codigo fin
-*/
 // Mostrar detalles de las imágenes
 function showDetails(imageUrls, layer) {
   if (!isEditing) {
