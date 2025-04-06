@@ -843,21 +843,65 @@ document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
 //nominatim test
 
 // Buscar intersección o dirección con Nominatim
+// Buscar intersección o dirección con Nominatim
 async function searchIntersection(street1, street2, city = 'Ciudad Autónoma de Buenos Aires', country = 'Argentina') {
   try {
-    const query = street2 ? `${street1} near ${street2}, ${city}, ${country}` : `${street1}, ${city}, ${country}`;
-    const encodedQuery = encodeURIComponent(query);
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1&countrycodes=AR&addressdetails=1`;
-    const response = await fetch(url, {
+    // Normalizar las calles agregando "Calle" o "Avenida" si no están presentes
+    const normalizeStreet = (street) => {
+      street = street.trim();
+      if (!street.toLowerCase().startsWith('calle') && !street.toLowerCase().startsWith('avenida') && !street.toLowerCase().startsWith('av.')) {
+        return `Calle ${street}`; // Por defecto, asumimos "Calle"
+      }
+      return street;
+    };
+
+    // Formato principal: "calle1 near calle2, ciudad, país"
+    let query = street2 ? `${normalizeStreet(street1)} near ${normalizeStreet(street2)}, ${city}, ${country}` : `${normalizeStreet(street1)}, ${city}, ${country}`;
+    let encodedQuery = encodeURIComponent(query);
+    let url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1&countrycodes=AR&addressdetails=1`;
+    let response = await fetch(url, {
       headers: {
-        'User-Agent': 'fisuMapBaires/1.0 (seniorxboedo@gmail.com)' // Reemplazá con tu email
+        'User-Agent': 'fisuMapBaires/1.0 (tu-email@example.com)' // Reemplazá con tu email
       }
     });
-    const data = await response.json();
+    let data = await response.json();
+
     if (data && data.length > 0) {
       const { lat, lon, display_name } = data[0];
       return { latitude: parseFloat(lat), longitude: parseFloat(lon), displayName: display_name };
     }
+
+    // Respaldo: si "near" falla, buscamos las calles por separado
+    if (street2) {
+      console.log('Búsqueda con "near" falló, intentando búsqueda por separado...');
+      const searchSingleStreet = async (street) => {
+        const singleQuery = `${normalizeStreet(street)}, ${city}, ${country}`;
+        const singleEncodedQuery = encodeURIComponent(singleQuery);
+        const singleUrl = `https://nominatim.openstreetmap.org/search?q=${singleEncodedQuery}&format=json&limit=1&countrycodes=AR&addressdetails=1`;
+        const singleResponse = await fetch(singleUrl, {
+          headers: {
+            'User-Agent': 'fisuMapBaires/1.0 (tu-email@example.com)'
+          }
+        });
+        const singleData = await singleResponse.json();
+        return singleData.length > 0 ? { lat: parseFloat(singleData[0].lat), lon: parseFloat(singleData[0].lon) } : null;
+      };
+
+      const result1 = await searchSingleStreet(street1);
+      const result2 = await searchSingleStreet(street2);
+
+      if (result1 && result2) {
+        // Calculamos un punto intermedio entre las dos calles
+        const avgLat = (result1.lat + result2.lat) / 2;
+        const avgLon = (result1.lon + result2.lon) / 2;
+        return {
+          latitude: avgLat,
+          longitude: avgLon,
+          displayName: `${street1} y ${street2}, ${city}`
+        };
+      }
+    }
+
     return null;
   } catch (error) {
     console.error('Error al buscar:', error.message);
@@ -872,7 +916,7 @@ function getCurrentLocationVisor() {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
         map.setView([lat, lon], 15);
-        addSpecialMarker(lat, lon);
+        addSpecialMarker(lat, lon); // Usamos el marcador especial
         try {
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
           const data = await response.json();
@@ -891,7 +935,8 @@ function getCurrentLocationVisor() {
   }
 }
 
-document.getElementById('currentLocationBtn').addEventListener('click', getCurrentLocationVisor);
+// Actualizamos el evento para el nuevo ID
+document.getElementById('currentLocationVisorBtn').addEventListener('click', getCurrentLocationVisor);
 
 const specialIcon = L.icon({
   iconUrl: 'img/iconMapSpecial.png', // Usá un ícono azul o el que prefieras
@@ -911,6 +956,7 @@ function addSpecialMarker(lat, lon) {
   specialMarker = L.marker([lat, lon], { icon: specialIcon }).addTo(map);
 }
 
+// Procesar la consulta del usuario
 // Procesar la consulta del usuario
 async function geocodeIntersection(query) {
   const intersectionRegex = /\b(y|&)\b/i;
