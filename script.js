@@ -839,75 +839,165 @@ document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
   getCurrentLocation();
 });
 
-
 //nominatim test
 
-// Buscar intersección o dirección con Nominatim
-// Buscar intersección o dirección con Nominatim
-async function searchIntersection(street1, street2, city = 'Ciudad Autónoma de Buenos Aires', country = 'Argentina') {
+// Buscar una calle con Nominatim y obtener su OSM ID
+async function searchStreet(street, city = 'Ciudad Autónoma de Buenos Aires', country = 'Argentina') {
   try {
-    // Normalizar las calles agregando "Calle" o "Avenida" si no están presentes
-    const normalizeStreet = (street) => {
-      street = street.trim();
-      if (!street.toLowerCase().startsWith('calle') && !street.toLowerCase().startsWith('avenida') && !street.toLowerCase().startsWith('av.')) {
-        return `Calle ${street}`; // Por defecto, asumimos "Calle"
-      }
-      return street;
-    };
-
-    // Formato principal: "calle1 near calle2, ciudad, país"
-    let query = street2 ? `${normalizeStreet(street1)} near ${normalizeStreet(street2)}, ${city}, ${country}` : `${normalizeStreet(street1)}, ${city}, ${country}`;
-    let encodedQuery = encodeURIComponent(query);
-    let url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1&countrycodes=AR&addressdetails=1`;
-    let response = await fetch(url, {
+    const query = `${street}, ${city}, ${country}`;
+    const encodedQuery = encodeURIComponent(query);
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1&countrycodes=AR&addressdetails=1`;
+    const response = await fetch(url, {
       headers: {
         'User-Agent': 'fisuMapBaires/1.0 (tu-email@example.com)' // Reemplazá con tu email
       }
     });
-    let data = await response.json();
-
+    const data = await response.json();
     if (data && data.length > 0) {
-      const { lat, lon, display_name } = data[0];
-      return { latitude: parseFloat(lat), longitude: parseFloat(lon), displayName: display_name };
+      const { lat, lon, osm_id, osm_type, display_name } = data[0];
+      return { osmId: osm_id, osmType: osm_type, lat: parseFloat(lat), lon: parseFloat(lon), displayName: display_name };
     }
+    return null;
+  } catch (error) {
+    console.error(`Error al buscar la calle ${street}:`, error.message);
+    return null;
+  }
+}
 
-    // Respaldo: si "near" falla, buscamos las calles por separado
-    if (street2) {
-      console.log('Búsqueda con "near" falló, intentando búsqueda por separado...');
-      const searchSingleStreet = async (street) => {
-        const singleQuery = `${normalizeStreet(street)}, ${city}, ${country}`;
-        const singleEncodedQuery = encodeURIComponent(singleQuery);
-        const singleUrl = `https://nominatim.openstreetmap.org/search?q=${singleEncodedQuery}&format=json&limit=1&countrycodes=AR&addressdetails=1`;
-        const singleResponse = await fetch(singleUrl, {
-          headers: {
-            'User-Agent': 'fisuMapBaires/1.0 (tu-email@example.com)'
-          }
-        });
-        const singleData = await singleResponse.json();
-        return singleData.length > 0 ? { lat: parseFloat(singleData[0].lat), lon: parseFloat(singleData[0].lon) } : null;
-      };
+// Buscar la intersección usando Overpass API
+async function findIntersectionWithOverpass(street1, street2, city = 'Ciudad Autónoma de Buenos Aires', country = 'Argentina') {
+  try {
+    // Normalizar las calles
+    const normalizeStreet = (street) => {
+      street = street.trim();
+      if (!street.toLowerCase().startsWith('calle') && !street.toLowerCase().startsWith('avenida') && !street.toLowerCase().startsWith('av.')) {
+        return `Calle ${street}`;
+      }
+      return street;
+    };
 
-      const result1 = await searchSingleStreet(street1);
-      const result2 = await searchSingleStreet(street2);
+    // Buscar ambas calles con Nominatim para obtener sus OSM IDs
+    const street1Data = await searchStreet(normalizeStreet(street1), city, country);
+    const street2Data = await searchStreet(normalizeStreet(street2), city, country);
 
-      if (result1 && result2) {
-        // Calculamos un punto intermedio entre las dos calles
-        const avgLat = (result1.lat + result2.lat) / 2;
-        const avgLon = (result1.lon + result2.lon) / 2;
+    if (!street1Data || !street2Data) {
+      console.warn('No se encontraron datos para una o ambas calles.');
+      // Respaldo: usar un punto intermedio si no encontramos la intersección
+      if (street1Data && street2Data) {
+        const avgLat = (street1Data.lat + street2Data.lat) / 2;
+        const avgLon = (street1Data.lon + street2Data.lon) / 2;
         return {
           latitude: avgLat,
           longitude: avgLon,
           displayName: `${street1} y ${street2}, ${city}`
         };
       }
+      return null;
     }
 
+    // Usar Overpass API para encontrar el nodo compartido
+    const overpassQuery = `
+      [out:json];
+      (
+        way["highway"]["name"="${street1Data.displayName.split(',')[0]}"](around:1000,${street1Data.lat},${street1Data.lon});
+        way["highway"]["name"="${street2Data.displayName.split(',')[0]}"](around:1000,${street2Data.lat},${street2Data.lon});
+      );
+      (._;>;);
+      out center;
+    `;
+    const overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+    const overpassResponse = await fetch(overpassUrl);
+    const overpassData = await overpassResponse.json();
+
+    // Buscar nodos compartidos
+    const elements = overpassData.elements;
+    const ways = elements.filter(el => el.type === 'way');
+    const nodes = elements.filter(el => el.type === 'node');
+
+    if (ways.length < 2) {
+      console.warn('No se encontraron suficientes caminos para determinar la intersección.');
+      // Respaldo: punto intermedio
+      const avgLat = (street1Data.lat + street2Data.lat) / 2;
+      const avgLon = (street1Data.lon + street2Data.lon) / 2;
+      return {
+        latitude: avgLat,
+        longitude: avgLon,
+        displayName: `${street1} y ${street2}, ${city}`
+      };
+    }
+
+    const way1Nodes = ways[0].nodes;
+    const way2Nodes = ways[1].nodes;
+    const commonNodeId = way1Nodes.find(nodeId => way2Nodes.includes(nodeId));
+
+    if (commonNodeId) {
+      const commonNode = nodes.find(node => node.id === commonNodeId);
+      if (commonNode) {
+        return {
+          latitude: commonNode.lat,
+          longitude: commonNode.lon,
+          displayName: `${street1} y ${street2}, ${city}`
+        };
+      }
+    }
+
+    // Si no encontramos un nodo común, usamos un punto intermedio
+    const avgLat = (street1Data.lat + street2Data.lat) / 2;
+    const avgLon = (street1Data.lon + street2Data.lon) / 2;
+    return {
+      latitude: avgLat,
+      longitude: avgLon,
+      displayName: `${street1} y ${street2}, ${city}`
+    };
+  } catch (error) {
+    console.error('Error al buscar la intersección con Overpass:', error.message);
     return null;
+  }
+}
+
+// Buscar dirección o intersección
+async function searchIntersection(street1, street2, city = 'Ciudad Autónoma de Buenos Aires', country = 'Argentina') {
+  try {
+    if (street2) {
+      // Buscar intersección con Overpass API
+      return await findIntersectionWithOverpass(street1, street2, city, country);
+    } else {
+      // Búsqueda simple con Nominatim
+      const query = `${street1}, ${city}, ${country}`;
+      const encodedQuery = encodeURIComponent(query);
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1&countrycodes=AR&addressdetails=1`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'fisuMapBaires/1.0 (tu-email@example.com)'
+        }
+      });
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const { lat, lon, display_name } = data[0];
+        return { latitude: parseFloat(lat), longitude: parseFloat(lon), displayName: display_name };
+      }
+      return null;
+    }
   } catch (error) {
     console.error('Error al buscar:', error.message);
     return null;
   }
 }
+
+// Procesar la consulta del usuario
+async function geocodeIntersection(query) {
+  const intersectionRegex = /\b(y|&)\b/i;
+  if (!intersectionRegex.test(query)) {
+    return searchIntersection(query, '');
+  }
+  const parts = query.split(/\b(y|&)\b/i).map(part => part.trim());
+  if (parts.length < 2) return searchIntersection(query, '');
+  const street1 = parts[0];
+  const street2 = parts[2] || '';
+  return searchIntersection(street1, street2);
+}
+
+//nominatim test fin
 
 function getCurrentLocationVisor() {
   if (navigator.geolocation) {
@@ -941,33 +1031,34 @@ document.getElementById('currentLocationVisorBtn').addEventListener('click', get
 const specialIcon = L.icon({
   iconUrl: 'img/iconMapSpecial.png', // Usá un ícono azul o el que prefieras
   //shadowUrl: 'img/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
+  iconSize: [38, 62], // Aumentamos el tamaño (proporción 1:1.63, ajustada para el ícono de Leaflet)
+  iconAnchor: [19, 62], // Ajustamos el ancla para que la punta del marcador esté en el punto exacto
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [62, 62] // Aumentamos el tamaño de la sombra proporcionalmente
 });
 
 let specialMarker = null;
+let specialCircle = null; // Para el círculo que marca la zona
 
 function addSpecialMarker(lat, lon) {
+  // Eliminar marcador y círculo anteriores
   if (specialMarker) {
     map.removeLayer(specialMarker);
   }
-  specialMarker = L.marker([lat, lon], { icon: specialIcon }).addTo(map);
-}
-
-// Procesar la consulta del usuario
-// Procesar la consulta del usuario
-async function geocodeIntersection(query) {
-  const intersectionRegex = /\b(y|&)\b/i;
-  if (!intersectionRegex.test(query)) {
-    return searchIntersection(query, '');
+  if (specialCircle) {
+    map.removeLayer(specialCircle);
   }
-  const parts = query.split(/\b(y|&)\b/i).map(part => part.trim());
-  if (parts.length < 2) return searchIntersection(query, '');
-  const street1 = parts[0];
-  const street2 = parts[2] || '';
-  return searchIntersection(street1, street2);
+
+  // Agregar el marcador especial
+  specialMarker = L.marker([lat, lon], { icon: specialIcon }).addTo(map);
+
+  // Agregar un círculo semitransparente para marcar la zona
+  specialCircle = L.circle([lat, lon], {
+    color: '#00f', // Borde azul
+    fillColor: '#00f', // Relleno azul
+    fillOpacity: 0.2, // Semitransparente
+    radius: 200 // Radio de 200 metros
+  }).addTo(map);
 }
 
 // Manejar la búsqueda
