@@ -402,3 +402,41 @@ button {
     transform: scale(1);
   }
 }
+
+
+/*nuevo codigo para busqueda modo visor*/
+
+#searchContainer {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: #333;
+  padding: 5px;
+  border: 1px solid #555;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+}
+
+#searchInput {
+  width: 250px;
+  padding: 5px;
+  margin-right: 5px;
+  background: #444;
+  color: #fff;
+  border: 1px solid #666;
+}
+
+#searchBtn, #currentLocationBtn {
+  padding: 5px 10px;
+  background: #555;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+#searchBtn:hover, #currentLocationBtn:hover {
+  background: #666;
+}

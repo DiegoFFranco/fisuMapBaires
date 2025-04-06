@@ -355,6 +355,7 @@ function toggleMode(category) {
     document.getElementById('deselectAllBtn').style.display = 'inline-block';
     addPointBtn.textContent = 'Agregar Punto';
     document.getElementById('horariosSection').style.display = 'none';
+    document.getElementById('searchContainer').style.display = 'flex'; // Mostrar en modo visor
     isEditing = false;
 
     if (hasAddedPoint) {
@@ -417,6 +418,7 @@ function toggleMode(category) {
     document.getElementById('deselectAllBtn').style.display = 'none';
     addPointBtn.textContent = 'Volver a Visor';
     document.getElementById('pointDetails').style.display = 'none';
+    document.getElementById('searchContainer').style.display = 'none'; // Ocultar en modo edición
 
     map.closePopup();
 
@@ -837,6 +839,115 @@ document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
   getCurrentLocation();
 });
 
+
+//nominatim test
+
+// Buscar intersección o dirección con Nominatim
+async function searchIntersection(street1, street2, city = 'Ciudad Autónoma de Buenos Aires', country = 'Argentina') {
+  try {
+    const query = street2 ? `${street1} near ${street2}, ${city}, ${country}` : `${street1}, ${city}, ${country}`;
+    const encodedQuery = encodeURIComponent(query);
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1&countrycodes=AR&addressdetails=1`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'fisuMapBaires/1.0 (seniorxboedo@gmail.com)' // Reemplazá con tu email
+      }
+    });
+    const data = await response.json();
+    if (data && data.length > 0) {
+      const { lat, lon, display_name } = data[0];
+      return { latitude: parseFloat(lat), longitude: parseFloat(lon), displayName: display_name };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error al buscar:', error.message);
+    return null;
+  }
+}
+
+function getCurrentLocationVisor() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        map.setView([lat, lon], 15);
+        addSpecialMarker(lat, lon);
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+          const data = await response.json();
+          document.getElementById('searchInput').value = data.display_name || `Lat: ${lat}, Lon: ${lon}`;
+        } catch (e) {
+          console.error('Error en geocodificación inversa:', e);
+        }
+      },
+      (error) => {
+        console.error('Error en ubicación actual:', error);
+        alert('No se pudo obtener tu ubicación. Aseguráte de permitir el acceso.');
+      }
+    );
+  } else {
+    alert('Tu navegador no soporta geolocalización.');
+  }
+}
+
+document.getElementById('currentLocationBtn').addEventListener('click', getCurrentLocationVisor);
+
+const specialIcon = L.icon({
+  iconUrl: 'img/iconMapSpecial.png', // Usá un ícono azul o el que prefieras
+  //shadowUrl: 'img/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+let specialMarker = null;
+
+function addSpecialMarker(lat, lon) {
+  if (specialMarker) {
+    map.removeLayer(specialMarker);
+  }
+  specialMarker = L.marker([lat, lon], { icon: specialIcon }).addTo(map);
+}
+
+// Procesar la consulta del usuario
+async function geocodeIntersection(query) {
+  const intersectionRegex = /\b(y|&)\b/i;
+  if (!intersectionRegex.test(query)) {
+    return searchIntersection(query, '');
+  }
+  const parts = query.split(/\b(y|&)\b/i).map(part => part.trim());
+  if (parts.length < 2) return searchIntersection(query, '');
+  const street1 = parts[0];
+  const street2 = parts[2] || '';
+  return searchIntersection(street1, street2);
+}
+
+// Manejar la búsqueda
+async function handleSearch() {
+  const query = document.getElementById('searchInput').value;
+  if (!query) {
+    alert('Ingresá una dirección o intersección para buscar.');
+    return;
+  }
+  const result = await geocodeIntersection(query);
+  if (result) {
+    const { latitude, longitude } = result;
+    map.setView([latitude, longitude], 15);
+    addSpecialMarker(latitude, longitude);
+    document.getElementById('searchInput').value = result.displayName;
+  } else {
+    alert('No se encontró la dirección o intersección.');
+  }
+}
+
+// Eventos para el botón y Enter
+document.getElementById('searchBtn').addEventListener('click', handleSearch);
+document.getElementById('searchInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') handleSearch();
+});
+
 // Función para inicializar la app
 window.startApp = function () {
   console.log('Iniciando la app...');
@@ -844,6 +955,7 @@ window.startApp = function () {
   map.on('click', (event) => {
     hideDetails();
   });
+  document.getElementById('searchContainer').style.display = 'flex';
 };
 
 // Hacer las funciones accesibles globalmente para los eventos en index.html
