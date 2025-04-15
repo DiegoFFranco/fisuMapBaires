@@ -1037,26 +1037,21 @@ const specialIcon = L.icon({
   shadowSize: [62, 62] // Aumentamos el tamaño de la sombra proporcionalmente
 });
 
-let specialMarker = null;
+
 let specialCircle = null; // Para el círculo que marca la zona
 
 function addSpecialMarker(lat, lon) {
-  // Eliminar marcador y círculo anteriores
-  if (specialMarker) {
-    map.removeLayer(specialMarker);
-  }
+  // Eliminar círculo anterior
   if (specialCircle) {
     map.removeLayer(specialCircle);
   }
 
-  // Agregar el marcador especial
-  specialMarker = L.marker([lat, lon], { icon: specialIcon }).addTo(map);
-
   // Agregar un círculo semitransparente para marcar la zona
   specialCircle = L.circle([lat, lon], {
     color: '#00f', // Borde azul
+    weight: 1, // Borde más fino (antes era 2 por defecto)
     fillColor: '#00f', // Relleno azul
-    fillOpacity: 0.2, // Semitransparente
+    fillOpacity: 0.1, // Más transparente (antes era 0.2)
     radius: 200 // Radio de 200 metros
   }).addTo(map);
 }
