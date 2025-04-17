@@ -63,7 +63,7 @@ Object.keys(layersConfig).forEach(layer => {
   });
 });
 
-// Crear el contenido del popup
+// Crear el contenido del popup con carrusel de imágenes
 function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios, id) {
   const isLightBackground = ['yellow', 'pink', 'orange'].includes(layersConfig[layer].color);
   const popupColor = layersConfig[layer].color;
@@ -78,14 +78,36 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
     return `<a href="${url}" target="_blank">${truncated}</a>`;
   });
 
+  // Usar URLs en miniatura para el carrusel
+  const thumbnailUrls = imageUrls.map(url => {
+    console.log(`Cargando thumbnail para el popup: ${url.thumbnail || url}`);
+    return url.thumbnail || url;
+  });
+
+  // Generar el contenido del carrusel
+  let imageContent = '';
+  if (thumbnailUrls.length > 0) {
+    imageContent = `
+      <div class="popup-image-container">
+        <img class="popup-image" src="${thumbnailUrls[0]}" alt="Imagen del punto" onclick="showOverlay('${thumbnailUrls[0].replace('thumbnail', 'full')}', '${layer}', [${thumbnailUrls.map(url => `'${url.replace('thumbnail', 'full')}'`).join(',')}], 0)">
+        ${thumbnailUrls.length > 1 ? `
+          <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', [${thumbnailUrls.map(url => `'${url}'`).join(',')}], '${layer}')">◄</span>
+          <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', [${thumbnailUrls.map(url => `'${url}'`).join(',')}], '${layer}')">►</span>
+          <div class="popup-image-counter">1 de ${thumbnailUrls.length}</div>
+        ` : ''}
+      </div>
+    `;
+  }
+
   let popupContent = `
     <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${popupColor};">
       <span class="title">${title}</span>
       <div class="detail"><b>ID:</b> ${id}</div>
       <div class="detail"><b>Usuario:</b> ${user}</div>
-      <div class="detail"><b>Descripción:</b> ${processedDescription || 'Sin descripcion'}</div>
-      <div class="detail"><b>Dirección:</b> ${address || 'Sin direccion'}</div>
+      <div class="detail"><b>Descripción:</b> ${processedDescription || 'Sin descripción'}</div>
+      <div class="detail"><b>Dirección:</b> ${address || 'Sin dirección'}</div>
       <div class="detail"><b>Estado:</b> ${status}</div>
+      ${imageContent}
   `;
 
   if (layer === 'comercios-fisuras' && horarios) {
@@ -101,22 +123,21 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   return popupContent;
 }
 
+// Navegar imágenes en el popup
+function navigatePopupImages(direction, pointId, imageUrls, layer) {
+  const popup = document.querySelector(`.leaflet-popup-content .custom-popup`);
+  let currentIndex = parseInt(popup.querySelector('.popup-image-counter').textContent.split(' ')[0]) - 1;
+  currentIndex += direction;
+  if (currentIndex < 0) currentIndex = imageUrls.length - 1;
+  if (currentIndex >= imageUrls.length) currentIndex = 0;
 
-// Mostrar detalles de las imágenes
-function showDetails(imageUrls, layer) {
-  if (!isEditing) {
-    document.getElementById('pointDetails').style.display = 'block';
-    const photoContainer = document.getElementById('photoContainer');
-    photoContainer.innerHTML = '';
-    imageUrls.forEach((url, index) => {
-      const imgUrl = typeof url === 'string' ? url : url.full;
-      const img = document.createElement('img');
-      img.src = imgUrl;
-      img.onclick = () => showOverlay(imgUrl, layer, imageUrls, index);
-      photoContainer.appendChild(img);
-    });
-    photoContainer.scrollLeft = 0;
-  }
+  const imgElement = popup.querySelector('.popup-image');
+  imgElement.src = imageUrls[currentIndex];
+  imgElement.onclick = () => {
+    console.log(`Clic en thumbnail para abrir imagen full: ${imageUrls[currentIndex].replace('thumbnail', 'full')}`);
+    showOverlay(imageUrls[currentIndex].replace('thumbnail', 'full'), layer, imageUrls.map(url => url.replace('thumbnail', 'full')), currentIndex);
+  };
+  popup.querySelector('.popup-image-counter').textContent = `${currentIndex + 1} de ${imageUrls.length}`;
 }
 
 // Ocultar el overlay de imágenes
@@ -126,9 +147,10 @@ function hideOverlay() {
 
 // Mostrar el overlay de imágenes con navegación
 function showOverlay(url, layer, imageUrls, index) {
-  currentImages = imageUrls.map(url => typeof url === 'string' ? url : url.full);
+  currentImages = imageUrls;
   currentImageIndex = index;
   const overlay = document.getElementById('imageOverlay');
+  console.log(`Mostrando imagen full en overlay: ${url}`);
   overlay.innerHTML = `
     <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}'); event.stopPropagation();">◄</span>
     <img src="${url}" style="border-color: ${layersConfig[layer].color}">
@@ -143,16 +165,12 @@ function navigateImages(direction, layer) {
   if (currentImageIndex < 0) currentImageIndex = currentImages.length - 1;
   if (currentImageIndex >= currentImages.length) currentImageIndex = 0;
   const overlay = document.getElementById('imageOverlay');
+  console.log(`Navegando a imagen full: ${currentImages[currentImageIndex]}`);
   overlay.innerHTML = `
     <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}'); event.stopPropagation();">◄</span>
     <img src="${currentImages[currentImageIndex]}" style="border-color: ${layersConfig[layer].color}">
     <span class="nav-arrow next" onclick="navigateImages(1, '${layer}'); event.stopPropagation();">►</span>
   `;
-}
-
-// Ocultar los detalles
-function hideDetails() {
-  document.getElementById('pointDetails').style.display = 'none';
 }
 
 // Cargar puntos desde Firestore
@@ -177,13 +195,12 @@ async function loadPoints() {
       const data = doc.data();
       console.log(`Documento ID: ${doc.id}`);
       console.log(`Datos del documento:`, data);
-      // Resto del código...
 
       const category = data.properties?.category || 'fisuras';
       counts[category]++;
 
       const imageUrls = (data.properties?.imageUrls || data.imageUrls || []).map(url =>
-        typeof url === 'string' ? url : url.full
+        typeof url === 'string' ? { thumbnail: url, medium: url, full: url } : url
       );
 
       return {
@@ -192,8 +209,8 @@ async function loadPoints() {
         properties: {
           name: data.properties?.name || data.name || 'Sin título',
           description: data.properties?.description || data.description || '',
-          user: data.properties?.user || data.user || 'Anonimo',
-          address: data.properties?.address || data.address || 'Sin direccion',
+          user: data.properties?.user || data.user || 'Anónimo',
+          address: data.properties?.address || data.address || 'Sin dirección',
           imageUrls: imageUrls,
           category: category,
           status: data.properties?.status || 'verificado',
@@ -215,9 +232,6 @@ async function loadPoints() {
         const { name, description, user, address, imageUrls, category, status, horarios, id } = feature.properties;
         layerFeature.bindPopup(createPopupContent(name, user, description, address, category, imageUrls, status, horarios, id), { className: '' });
         layerFeature.on('click', (e) => {
-          if (!isEditing) {
-            showDetails(imageUrls, category);
-          }
           L.DomEvent.stopPropagation(e);
         });
         clusterGroups[category].addLayer(layerFeature);
@@ -387,9 +401,6 @@ function toggleMode(category) {
     }
 
     map.off('click');
-    map.on('click', (event) => {
-      hideDetails();
-    });
 
     if (currentMarker) {
       map.removeLayer(currentMarker);
@@ -416,7 +427,6 @@ function toggleMode(category) {
     document.getElementById('selectAllBtn').style.display = 'none';
     document.getElementById('deselectAllBtn').style.display = 'none';
     addPointBtn.textContent = 'Volver a Visor';
-    document.getElementById('pointDetails').style.display = 'none';
 
     map.closePopup();
 
@@ -466,7 +476,7 @@ async function submitPoint() {
   submitBtn.disabled = true;
 
   const category = document.getElementById('layerSelect').value;
-  const user = document.getElementById('userInput').value || 'Anonimo';
+  const user = document.getElementById('userInput').value || 'Anónimo';
   const title = document.getElementById('titleInput').value;
   const description = document.getElementById('descriptionInput').value;
   const address = document.getElementById('addressInput').value;
@@ -499,7 +509,6 @@ async function submitPoint() {
     }
   }
 
-
   document.getElementById('savingMessage').style.display = 'block';
 
   let imageUrls = [];
@@ -514,14 +523,13 @@ async function submitPoint() {
 
       try {
         const base64Image = await base64Promise;
-        // Generar un sufijo aleatorio para evitar duplicados
-        const randomSuffix = Math.random().toString(36).substring(2, 5); // Ejemplo: "abc"
-        const uniqueFilename = `${file.name.split('.')[0]}-${randomSuffix}.${file.name.split('.').pop()}`; // Ejemplo: "San-Martin-1-abc.jpg"
+        const randomSuffix = Math.random().toString(36).substring(2, 5);
+        const uniqueFilename = `${file.name.split('.')[0]}-${randomSuffix}.${file.name.split('.').pop()}`;
 
         const response = await fetch('/.netlify/functions/upload-to-services', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64Image, filename: uniqueFilename }) // Usar nombre único
+          body: JSON.stringify({ image: base64Image, filename: uniqueFilename })
         });
 
         const data = await response.json();
@@ -529,7 +537,7 @@ async function submitPoint() {
           throw new Error(data.error || 'Error al subir la imagen');
         }
 
-        imageUrls.push(data); // {thumbnail, medium, full}
+        imageUrls.push(data);
       } catch (e) {
         console.error('Error al subir imagen:', e);
         alert(`Error subiendo una foto: ${e.message}. Revisá los formatos e intentá de nuevo.`);
@@ -545,7 +553,6 @@ async function submitPoint() {
       full: 'https://i.imgur.com/bLBkpWR.png'
     });
   }
-
 
   let horarios = {};
   if (category === 'comercios-fisuras') {
@@ -582,7 +589,7 @@ async function submitPoint() {
       name: title,
       description: description,
       user: user,      
-      address: address || 'Sin direccion',
+      address: address || 'Sin dirección',
       imageUrls: imageUrls,
       timestamp: serverTimestamp(),
       category: category,
@@ -599,15 +606,9 @@ async function submitPoint() {
     const id = docRef.id;
     console.log('Punto guardado en Firestore con Id:', id);
 
-    ///await addDoc(colRef, pointData);
-    console.log('Punto guardado en Firestore:', pointData);
-
     const marker = L.marker([latitude, longitude], { icon: icons[category] });
-    marker.bindPopup(createPopupContent(title, user, description, address, category, imageUrls.map(url => url.full), 'temporal', horarios), { className: '' });
+    marker.bindPopup(createPopupContent(title, user, description, address, category, imageUrls, 'temporal', horarios, id), { className: '' });
     marker.on('click', (e) => {
-      if (!isEditing) {
-        showDetails(imageUrls.map(url => url.full), category);
-      }
       L.DomEvent.stopPropagation(e);
     });
     clusterGroups[category].addLayer(marker);
@@ -625,7 +626,6 @@ async function submitPoint() {
 
     toggleMode(category);
     marker.openPopup();
-    showDetails(imageUrls.map(url => url.full), category);
   } catch (error) {
     console.error('Error al guardar en Firestore:', error);
     alert(`Error al enviar: ${error.message}`);
@@ -649,10 +649,6 @@ function updateLayers() {
       }
     }
   });
-  const anyLayerSelected = Object.keys(clusterGroups).some(layer => document.getElementById(`${layer}Check`).checked);
-  if (!anyLayerSelected) {
-    hideDetails();
-  }
 }
 
 // Seleccionar todas las capas
@@ -671,7 +667,6 @@ function deselectAllLayers() {
     checkbox.checked = false;
     map.removeLayer(clusterGroups[layer]);
   });
-  hideDetails();
 }
 
 // Mostrar/ocultar campos de horarios según el checkbox "Mismo horario"
@@ -841,9 +836,6 @@ document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
 window.startApp = function () {
   console.log('Iniciando la app...');
   loadPoints();
-  map.on('click', (event) => {
-    hideDetails();
-  });
 };
 
 // Hacer las funciones accesibles globalmente para los eventos en index.html
@@ -855,3 +847,4 @@ window.toggleDomingoFields = toggleDomingoFields;
 window.hideOverlay = hideOverlay;
 window.navigateImages = navigateImages;
 window.toggleSabadoFields = toggleSabadoFields;
+window.navigatePopupImages = navigatePopupImages;
