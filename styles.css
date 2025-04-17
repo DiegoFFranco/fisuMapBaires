@@ -83,13 +83,13 @@ body {
   border: 1px solid #ccc;
   width: 100%;
   box-sizing: border-box;
-  margin-bottom: 5px; /* Agregamos un margen inferior para separar el input de los botones */
+  margin-bottom: 5px;
 }
 
 .address-container .button-container {
   display: flex;
-  justify-content: center; /* Centra los botones horizontalmente */
-  gap: 10px; /* Espacio entre los botones */
+  justify-content: center;
+  gap: 10px;
 }
 
 .address-container button {
@@ -212,7 +212,7 @@ body {
   white-space: normal;
   font-size: 14px;
   font-weight: bolder;
-  color: #18009e; /* Color opcional para destacar los enlaces */
+  color: #18009e;
   text-decoration: underline;
 }
 
@@ -249,7 +249,6 @@ button {
   border: 1px solid #666;
 }
 
-/*nuevo codigo para popups*/
 .leaflet-popup-content-wrapper {
   padding: 0;
   background: transparent;
@@ -265,21 +264,16 @@ button {
   border: none;
 }
 
-/* Forzamos que no haya bordes residuales */
 .leaflet-popup {
   border: none;
 }
 
-/* Agregamos bordes curvos al contenido del popup */
 .custom-popup {
   max-width: 300px;
   padding: 10px;
   border: none;
   border-radius: 8px;
-  /* Curvatura, podés ajustar el valor */
 }
-
-/*fin nuevo codigo para popups*/
 
 #horariosSection {
   margin-top: 10px;
@@ -343,27 +337,25 @@ button {
   margin-left: 5px;
 }
 
-/* Estilos para el overlay de éxito */
 #successOverlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Fondo semitransparente */
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000; /* Asegurarse de que esté por encima de otros elementos */
+  z-index: 1000;
 }
 
 #successImage {
-  max-width: 200px; /* Ajusta el tamaño según tu imagen */
+  max-width: 200px;
   max-height: 200px;
-  animation: fadeIn 0.5s ease-in-out; /* Animación de entrada */
+  animation: fadeIn 0.5s ease-in-out;
 }
 
-/* Animación de entrada para la imagen */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -375,19 +367,18 @@ button {
   }
 }
 
-/* Estilos para el carrusel de imágenes en el popup */
 .popup-image-container {
   position: relative;
   width: 280px;
-  height: 210px;
+  height: 230px; /* Aumentado para dar espacio al contador */
   margin: 10px auto;
-  overflow: hidden;
+  /* overflow: hidden; */ /* Quitado para evitar cortar el contador */
 }
 
 .popup-image {
   width: 280px;
   height: 210px;
-  object-fit: contain; /* Mantiene proporciones, ajusta al contenedor */
+  object-fit: contain;
   cursor: pointer;
 }
 
