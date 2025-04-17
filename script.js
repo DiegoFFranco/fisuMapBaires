@@ -8,7 +8,6 @@ let lastCreatedLayer = null;
 let previousSelectedLayers = [];
 let hasAddedPoint = false;
 
-// Función para truncar URLs largas
 function truncateUrl(url, maxLength = 30) {
   if (url.length > maxLength) {
     return url.substring(0, maxLength - 3) + '...';
@@ -16,13 +15,11 @@ function truncateUrl(url, maxLength = 30) {
   return url;
 }
 
-// Inicializar el mapa
 const map = L.map('mapContainer').setView([-34.6, -58.4], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
-// Definir los íconos
 const iconBase = 'img/marker-icon-2x-';
 const shadowBase = 'img/marker-shadow.png';
 
@@ -37,7 +34,6 @@ const icons = {
   'comisarias': L.icon({ iconUrl: `${iconBase}blue.png`, shadowUrl: shadowBase, iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] })
 };
 
-// Configuración de capas
 const layersConfig = {
   'fisuras': { color: 'red' },
   'limpieza': { color: 'green' },
@@ -49,7 +45,6 @@ const layersConfig = {
   'comisarias': { color: 'blue' }
 };
 
-// Crear los grupos de clusters para cada capa
 const clusterGroups = {};
 Object.keys(layersConfig).forEach(layer => {
   clusterGroups[layer] = L.markerClusterGroup({
@@ -63,28 +58,23 @@ Object.keys(layersConfig).forEach(layer => {
   });
 });
 
-// Crear el contenido del popup con carrusel de imágenes
 function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios, id) {
   const isLightBackground = ['yellow', 'pink', 'orange'].includes(layersConfig[layer].color);
   const popupColor = layersConfig[layer].color;
   const cleanDescription = (description || '').replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
-  
-  // Expresión regular para detectar URLs
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  
-  // Reemplazar URLs por enlaces acortados
   const processedDescription = cleanDescription.replace(urlRegex, (url) => {
     const truncated = truncateUrl(url);
     return `<a href="${url}" target="_blank">${truncated}</a>`;
   });
 
-  // Usar URLs directamente (como strings)
+  console.log(`Punto ${id} - Imágenes disponibles:`, JSON.stringify(imageUrls.map((url, index) => ({ index, url })), null, 2));
+
   const thumbnailUrls = imageUrls.map(url => {
-    console.log(`Cargando imagen para el popup: ${url}`);
+    console.log(`Punto ${id} - Cargando imagen para popup [index: ${imageUrls.indexOf(url)}]: ${url}`);
     return typeof url === 'string' ? url : url.full || url;
   });
 
-  // Generar el contenido del carrusel
   let imageContent = '';
   if (thumbnailUrls.length > 0) {
     imageContent = `
@@ -123,19 +113,19 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   return popupContent;
 }
 
-// Asignar eventos a las imágenes del popup
 function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
   const imgElement = popup.querySelector('.popup-image');
   if (imgElement) {
+    const index = parseInt(imgElement.getAttribute('data-index')) || 0;
     imgElement.addEventListener('click', () => {
-      const index = parseInt(imgElement.getAttribute('data-index')) || 0;
-      console.log(`Clic en imagen para abrir overlay: ${imageUrls[index]}`);
-      showOverlay(imageUrls[index], layer, imageUrls, index);
+      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${index}]: ${imageUrls[index]}`);
+      showOverlay(imageUrls[index], layer, imageUrls, index, pointId);
     });
+  } else {
+    console.error(`Punto ${pointId} - No se encontró el elemento .popup-image`);
   }
 }
 
-// Navegar imágenes en el popup
 function navigatePopupImages(direction, pointId, imageUrls, layer) {
   const popup = document.querySelector(`.leaflet-popup-content .custom-popup`);
   let currentIndex = parseInt(popup.querySelector('.popup-image-counter').textContent.split(' ')[0]) - 1;
@@ -147,49 +137,62 @@ function navigatePopupImages(direction, pointId, imageUrls, layer) {
   imgElement.src = imageUrls[currentIndex];
   imgElement.setAttribute('data-index', currentIndex);
   popup.querySelector('.popup-image-counter').textContent = `${currentIndex + 1} de ${imageUrls.length}`;
+  console.log(`Punto ${pointId} - Navegando en popup a imagen [index: ${currentIndex}]: ${imageUrls[currentIndex]}`);
 
-  // Reasignar evento de clic
-  imgElement.removeEventListener('click', imgElement.onclick); // Limpiar cualquier evento previo
+  imgElement.removeEventListener('click', imgElement.onclick);
   imgElement.addEventListener('click', () => {
-    console.log(`Clic en thumbnail para abrir imagen full: ${imageUrls[currentIndex]}`);
-    showOverlay(imageUrls[currentIndex], layer, imageUrls, currentIndex);
+    console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex]}`);
+    showOverlay(imageUrls[currentIndex], layer, imageUrls, currentIndex, pointId);
   });
 }
 
-// Ocultar el overlay de imágenes
 function hideOverlay() {
-  document.getElementById('imageOverlay').style.display = 'none';
+  const overlay = document.getElementById('imageOverlay');
+  overlay.style.display = 'none';
+  overlay.innerHTML = '';
+  console.log('Overlay ocultado');
 }
 
-// Mostrar el overlay de imágenes con navegación
-function showOverlay(url, layer, imageUrls, index) {
+function showOverlay(url, layer, imageUrls, index, pointId) {
   currentImages = imageUrls;
   currentImageIndex = index;
   const overlay = document.getElementById('imageOverlay');
-  console.log(`Mostrando imagen en overlay: ${url}`);
+  console.log(`Punto ${pointId} - Abriendo overlay con imagen [index: ${index}]: ${url}`);
+
+  const navButtons = imageUrls.length > 1 ? `
+    <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}', '${pointId}'); event.stopPropagation();">◄</span>
+    <span class="nav-arrow next" onclick="navigateImages(1, '${layer}', '${pointId}'); event.stopPropagation();">►</span>
+  ` : '';
+
   overlay.innerHTML = `
-    <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}'); event.stopPropagation();">◄</span>
+    ${navButtons}
     <img src="${url}" style="border-color: ${layersConfig[layer].color}">
-    <span class="nav-arrow next" onclick="navigateImages(1, '${layer}'); event.stopPropagation();">►</span>
   `;
   overlay.style.display = 'flex';
+  console.log(`Punto ${pointId} - Mostrando imagen en overlay [index: ${index}]: ${url}`);
 }
 
-// Navegar entre imágenes en el overlay
-function navigateImages(direction, layer) {
+function navigateImages(direction, layer, pointId) {
   currentImageIndex += direction;
   if (currentImageIndex < 0) currentImageIndex = currentImages.length - 1;
   if (currentImageIndex >= currentImages.length) currentImageIndex = 0;
+
   const overlay = document.getElementById('imageOverlay');
-  console.log(`Navegando a imagen: ${currentImages[currentImageIndex]}`);
+  const url = currentImages[currentImageIndex];
+  console.log(`Punto ${pointId} - Navegando en overlay a imagen [index: ${currentImageIndex}]: ${url}`);
+
+  const navButtons = currentImages.length > 1 ? `
+    <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}', '${pointId}'); event.stopPropagation();">◄</span>
+    <span class="nav-arrow next" onclick="navigateImages(1, '${layer}', '${pointId}'); event.stopPropagation();">►</span>
+  ` : '';
+
   overlay.innerHTML = `
-    <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}'); event.stopPropagation();">◄</span>
-    <img src="${currentImages[currentImageIndex]}" style="border-color: ${layersConfig[layer].color}">
-    <span class="nav-arrow next" onclick="navigateImages(1, '${layer}'); event.stopPropagation();">►</span>
+    ${navButtons}
+    <img src="${url}" style="border-color: ${layersConfig[layer].color}">
   `;
+  console.log(`Punto ${pointId} - Mostrando imagen en overlay [index: ${currentImageIndex}]: ${url}`);
 }
 
-// Cargar puntos desde Firestore
 async function loadPoints() {
   console.log('Iniciando carga de puntos...');
   Object.keys(clusterGroups).forEach(layer => {
@@ -209,8 +212,7 @@ async function loadPoints() {
 
     const features = snapshot.docs.map(doc => {
       const data = doc.data();
-      console.log(`Documento ID: ${doc.id}`);
-      console.log(`Datos del documento:`, data);
+      console.log(`Punto ${doc.id} - Datos completos:`, JSON.stringify(data, null, 2));
 
       const category = data.properties?.category || 'fisuras';
       counts[category]++;
@@ -272,7 +274,6 @@ async function loadPoints() {
   }
 }
 
-// Geocodificar una dirección
 async function geocodeAddress() {
   console.log('Botón de búsqueda clicado, ejecutando geocodeAddress...');
   const address = document.getElementById('addressInput').value;
@@ -300,7 +301,6 @@ async function geocodeAddress() {
   }
 }
 
-// Obtener la ubicación actual del usuario
 function getCurrentLocation() {
   console.log('Botón de ubicación actual clicado, ejecutando getCurrentLocation...');
   if (navigator.geolocation) {
@@ -331,7 +331,6 @@ function getCurrentLocation() {
   }
 }
 
-// Actualizar la capa en modo edición
 function updateEditorLayer() {
   if (isEditing) {
     const selectedLayer = document.getElementById('layerSelect').value;
@@ -355,7 +354,6 @@ function updateEditorLayer() {
   }
 }
 
-// Habilitar el evento de clic en el mapa para modo editor
 function enableMapClick() {
   map.off('click');
   map.on('click', async (event) => {
@@ -377,7 +375,6 @@ function enableMapClick() {
   });
 }
 
-// Alternar entre modo visor y edición
 function toggleMode(category) {
   console.log('Entrando a toggleMode, isEditing:', isEditing);
   const addPointBtn = document.getElementById('addPointBtn');
@@ -477,7 +474,6 @@ function toggleMode(category) {
   }
 }
 
-// Mostrar el overlay de éxito
 function showSuccessOverlay() {
   const successOverlay = document.getElementById('successOverlay');
   successOverlay.style.display = 'flex';
@@ -490,7 +486,6 @@ function showSuccessOverlay() {
   });
 }
 
-// Guardar un punto en Firestore
 async function submitPoint() {
   const submitBtn = document.getElementById('submitBtn');
   submitBtn.disabled = true;
@@ -557,7 +552,7 @@ async function submitPoint() {
           throw new Error(data.error || 'Error al subir la imagen');
         }
 
-        imageUrls.push(data.url || data.full || data); // Usar la URL directa
+        imageUrls.push(data.url || data.full || data);
       } catch (e) {
         console.error('Error al subir imagen:', e);
         alert(`Error subiendo una foto: ${e.message}. Revisá los formatos e intentá de nuevo.`);
@@ -654,7 +649,6 @@ async function submitPoint() {
   document.getElementById('savingMessage').style.display = 'none';
 }
 
-// Actualizar las capas visibles
 function updateLayers() {
   Object.keys(clusterGroups).forEach(layer => {
     const checkbox = document.getElementById(`${layer}Check`);
@@ -670,7 +664,6 @@ function updateLayers() {
   });
 }
 
-// Seleccionar todas las capas
 function selectAllLayers() {
   Object.keys(clusterGroups).forEach(layer => {
     const checkbox = document.getElementById(`${layer}Check`);
@@ -679,7 +672,6 @@ function selectAllLayers() {
   });
 }
 
-// Deseleccionar todas las capas
 function deselectAllLayers() {
   Object.keys(clusterGroups).forEach(layer => {
     const checkbox = document.getElementById(`${layer}Check`);
@@ -688,7 +680,6 @@ function deselectAllLayers() {
   });
 }
 
-// Mostrar/ocultar campos de horarios según el checkbox "Mismo horario"
 function toggleScheduleFields() {
   const sameSchedule = document.getElementById('sameSchedule').checked;
   const sameScheduleFields = document.getElementById('sameScheduleFields');
@@ -705,7 +696,6 @@ function toggleScheduleFields() {
   }
 }
 
-// Deshabilitar campos de sábado si está marcado como "Cerrado"
 function toggleSabadoFields() {
   const sabCerrado = document.getElementById('sabCerrado').checked;
   const sabApertura = document.getElementById('sabApertura');
@@ -722,7 +712,6 @@ function toggleSabadoFields() {
   }
 }
 
-// Deshabilitar campos de domingo si está marcado como "Cerrado"
 function toggleDomingoFields() {
   const domCerrado = document.getElementById('domCerrado').checked;
   const domApertura = document.getElementById('domApertura');
@@ -739,7 +728,6 @@ function toggleDomingoFields() {
   }
 }
 
-// Función para limpiar el formulario y el estado
 function resetForm() {
   console.log('Ejecutando resetForm...');
   latitude = null;
@@ -833,31 +821,23 @@ function resetForm() {
   console.log('horariosSection display:', horariosSection.style.display);
 }
 
-// Escuchar cambios en el selector de capas
 document.getElementById('layerSelect').addEventListener('change', updateEditorLayer);
-
-// Agregar evento al botón de agregar punto
 document.getElementById('addPointBtn').addEventListener('click', () => toggleMode());
 document.getElementById('submitBtn').addEventListener('click', submitPoint);
-
-// Agregar eventos a los botones de búsqueda y ubicación actual
 document.getElementById('searchAddressBtn').addEventListener('click', (e) => {
   e.preventDefault();
   geocodeAddress();
 });
-
 document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
   e.preventDefault();
   getCurrentLocation();
 });
 
-// Función para inicializar la app
 window.startApp = function () {
   console.log('Iniciando la app...');
   loadPoints();
 };
 
-// Hacer las funciones accesibles globalmente para los eventos en index.html
 window.selectAllLayers = selectAllLayers;
 window.deselectAllLayers = deselectAllLayers;
 window.updateLayers = updateLayers;

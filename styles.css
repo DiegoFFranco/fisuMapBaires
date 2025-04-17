@@ -370,9 +370,8 @@ button {
 .popup-image-container {
   position: relative;
   width: 280px;
-  height: 230px; /* Aumentado para dar espacio al contador */
+  height: 230px;
   margin: 10px auto;
-  /* overflow: hidden; */ /* Quitado para evitar cortar el contador */
 }
 
 .popup-image {

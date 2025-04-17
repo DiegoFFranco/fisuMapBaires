@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">  
@@ -11,7 +10,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
   <h2 id="modeTitle">fisuMapBaires - Modo Visor</h2>
   <button id="addPointBtn">Agregar Punto</button>
@@ -35,7 +33,6 @@
         <button id="currentLocationBtn" title="Ubicación actual">Ubicación Actual</button>
       </div>
     </div>
-
     <label for="userInput">Usuario:</label>
     <input type="text" id="userInput" placeholder="Anónimo">
     <label for="titleInput">Título:</label>
@@ -44,8 +41,6 @@
     <textarea id="descriptionInput"></textarea>
     <label for="photoInput">Fotos (máx. 5, JPG/PNG):</label>
     <input type="file" id="photoInput" accept="image/jpeg,image/png" multiple>
-
-    <!-- Sección de horarios (inicialmente oculta) -->
     <div id="horariosSection" style="display: none;">
       <h4>Horarios (solo Comercios Fisuras)</h4>
       <label for="sameSchedule">
@@ -83,7 +78,6 @@
         </div>
       </div>
     </div>
-
     <button id="submitBtn">Enviar Punto</button>
   </div>
   <div id="imageOverlay" onclick="hideOverlay()"></div>
@@ -112,20 +106,14 @@
     </div>
   </div>
   <div id="savingMessage">Guardando punto, por favor esperá...</div>
-  <!-- Nuevo overlay para la imagen de éxito -->
   <div id="successOverlay" style="display: none;">
     <img id="successImage" src="img/success.png" alt="Punto agregado con éxito">
   </div>
-
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
   <script type="module">
-    // Importar las funciones de Firebase
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
     import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
-  
-    // Función para obtener las variables de entorno desde la Netlify Function
     async function loadEnv() {
       console.log('Intentando cargar variables de entorno desde /.netlify/functions/get-env...');
       try {
@@ -142,8 +130,6 @@
         throw error;
       }
     }
-  
-    // Función para inicializar la app
     window.initializeApp = async function() {
       try {
         const env = await loadEnv();
@@ -156,7 +142,6 @@
           messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
           appId: env.FIREBASE_APP_ID
         };
-  
         console.log('Inicializando Firebase...');
         const app = initializeApp(firebaseConfig);
         console.log('Firebase inicializado:', app);
@@ -167,26 +152,23 @@
         window.getDocs = getDocs;
         window.addDoc = addDoc;
         window.serverTimestamp = serverTimestamp;
-  
         console.log('Cargando script.js...');
         const script = document.createElement('script');
         script.type = 'module';
         script.src = 'script.js';
         script.onload = () => {
           console.log('script.js cargado, inicializando la app...');
-          window.startApp(); // Llamar a startApp() después de cargar script.js
+          window.startApp();
         };
         document.body.appendChild(script);
       } catch (error) {
         console.error('Error al inicializar Firebase:', error);
       }
     };
-  
-    // Llamar a initializeApp cuando el DOM esté listo
     document.addEventListener('DOMContentLoaded', () => {
       console.log('DOM cargado, inicializando la app...');
       window.initializeApp();
     });
   </script>  
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9319a80d99f86745',t:'MTc0NDg2OTE0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
