@@ -69,7 +69,7 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
     return `<a href="${url}" target="_blank">${truncated}</a>`;
   });
 
-  console.log(`Punto ${id} - Imágenes disponibles:`, JSON.stringify(imageUrls.map((url, index) => ({ index, url })), null, 2));
+  console.log(`Punto ${id} - Imágenes disponibles:`, JSON.stringify(imageUrls.map((img, index) => ({ index, thumbnail: img.thumbnail, full: img.full })), null, 2));
 
   const images = Array.isArray(imageUrls) ? imageUrls : [];
   const imageCount = images.length;
@@ -79,11 +79,11 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   if (imageCount > 0) {
     imageContent = `
       <div class="popup-image-container">
-        <img class="popup-image" src="${images[currentIndex]}" alt="Imagen del punto" data-index="${currentIndex}" data-layer="${layer}" data-id="${id}">
+        <img class="popup-image" src="${images[currentIndex].thumbnail}" alt="Imagen del punto" data-index="${currentIndex}" data-layer="${layer}" data-id="${id}">
         <div class="popup-image-counter">${currentIndex + 1} de ${imageCount}</div>
         ${imageCount > 1 ? `
-          <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', [${images.map(url => `'${url}'`).join(',')}], '${layer}')">◄</span>
-          <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', [${images.map(url => `'${url}'`).join(',')}], '${layer}')">►</span>
+          <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', [${images.map(img => JSON.stringify(img)).join(',')}], '${layer}')">◄</span>
+          <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', [${images.map(img => JSON.stringify(img)).join(',')}], '${layer}')">►</span>
         ` : ''}
       </div>
     `;
@@ -116,12 +116,14 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
 function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
   const imgElement = popup.querySelector('.popup-image');
   if (imgElement) {
+    // Remover cualquier manejador de eventos previo para evitar duplicados
+    imgElement.removeEventListener('click', imgElement.onclick);
     const index = parseInt(imgElement.getAttribute('data-index'), 10);
     imgElement.addEventListener('click', () => {
-      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${index}]: ${imageUrls[index]}`);
-      showOverlay(imageUrls[index], layer, imageUrls, index, pointId);
+      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${index}]: ${imageUrls[index].full}`);
+      showOverlay(imageUrls, layer, index, pointId);
     });
-    console.log(`Punto ${pointId} - Click handler attached to popup image`);
+    console.log(`Punto ${pointId} - Click handler attached to popup image [index: ${index}]`);
   } else {
     console.error(`Punto ${pointId} - No se encontró el elemento .popup-image`);
   }
@@ -135,15 +137,16 @@ function navigatePopupImages(direction, pointId, imageUrls, layer) {
   if (currentIndex >= imageUrls.length) currentIndex = 0;
 
   const imgElement = popup.querySelector('.popup-image');
-  imgElement.src = imageUrls[currentIndex];
+  imgElement.src = imageUrls[currentIndex].thumbnail;
   imgElement.setAttribute('data-index', currentIndex);
   popup.querySelector('.popup-image-counter').textContent = `${currentIndex + 1} de ${imageUrls.length}`;
-  console.log(`Punto ${pointId} - Navegando en popup a imagen [index: ${currentIndex}]: ${imageUrls[currentIndex]}`);
+  console.log(`Punto ${pointId} - Navegando en popup a imagen [index: ${currentIndex}]: ${imageUrls[currentIndex].thumbnail}`);
 
+  // Reasignar el manejador de clic para la nueva imagen
   imgElement.removeEventListener('click', imgElement.onclick);
   imgElement.addEventListener('click', () => {
-    console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex]}`);
-    showOverlay(imageUrls[currentIndex], layer, imageUrls, currentIndex, pointId);
+    console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex].full}`);
+    showOverlay(imageUrls, layer, currentIndex, pointId);
   });
 }
 
@@ -154,11 +157,11 @@ function hideOverlay() {
   console.log('Overlay ocultado');
 }
 
-function showOverlay(url, layer, imageUrls, index, pointId) {
+function showOverlay(imageUrls, layer, index, pointId) {
   currentImages = imageUrls;
   currentImageIndex = index;
   const overlay = document.getElementById('imageOverlay');
-  console.log(`Punto ${pointId} - Abriendo overlay con imagen [index: ${index}]: ${url}`);
+  console.log(`Punto ${pointId} - Abriendo overlay con imagen [index: ${index}]: ${imageUrls[index].full}`);
 
   const navButtons = imageUrls.length > 1 ? `
     <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}', '${pointId}'); event.stopPropagation();">◄</span>
@@ -167,10 +170,10 @@ function showOverlay(url, layer, imageUrls, index, pointId) {
 
   overlay.innerHTML = `
     ${navButtons}
-    <img src="${url}" style="border-color: ${layersConfig[layer].color}">
+    <img src="${imageUrls[index].full}" style="border-color: ${layersConfig[layer].color}">
   `;
   overlay.style.display = 'flex';
-  console.log(`Punto ${pointId} - Mostrando imagen en overlay [index: ${index}]: ${url}`);
+  console.log(`Punto ${pointId} - Mostrando imagen en overlay [index: ${index}]: ${imageUrls[index].full}`);
 }
 
 function navigateImages(direction, layer, pointId) {
@@ -179,7 +182,7 @@ function navigateImages(direction, layer, pointId) {
   if (currentImageIndex >= currentImages.length) currentImageIndex = 0;
 
   const overlay = document.getElementById('imageOverlay');
-  const url = currentImages[currentImageIndex];
+  const url = currentImages[currentImageIndex].full;
   console.log(`Punto ${pointId} - Navegando en overlay a imagen [index: ${currentImageIndex}]: ${url}`);
 
   const navButtons = currentImages.length > 1 ? `
@@ -218,9 +221,13 @@ async function loadPoints() {
       const category = data.properties?.category || 'fisuras';
       counts[category]++;
 
-      const imageUrls = (data.properties?.imageUrls || data.imageUrls || []).map(url =>
-        typeof url === 'string' ? url : url.full || url
-      );
+      // Asumimos que imageUrls es un arreglo de objetos { thumbnail, full }
+      const imageUrls = (data.properties?.imageUrls || data.imageUrls || []).map(url => ({
+        thumbnail: url.thumbnail || url.full,
+        full: url.full || url.thumbnail
+      }));
+
+      console.log(`Punto ${doc.id} - Imágenes procesadas:`, JSON.stringify(imageUrls.map((img, index) => ({ index, thumbnail: img.thumbnail, full: img.full })), null, 2));
 
       return {
         type: data.type || 'Feature',
@@ -252,7 +259,12 @@ async function loadPoints() {
         const popupContent = createPopupContent(name, user, description, address, category, imageUrls, status, horarios, id);
         layerFeature.bindPopup(popupContent, { className: '' });
         layerFeature.on('popupopen', () => {
-          attachPopupImageEvents(document.querySelector(`.leaflet-popup-content .custom-popup`), imageUrls, category, id);
+          const popupElement = document.querySelector(`.leaflet-popup-content .custom-popup`);
+          if (popupElement) {
+            attachPopupImageEvents(popupElement, imageUrls, category, id);
+          } else {
+            console.error(`Punto ${id} - No se encontró .custom-popup al abrir el popup`);
+          }
         });
         layerFeature.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
@@ -553,7 +565,10 @@ async function submitPoint() {
           throw new Error(data.error || 'Error al subir la imagen');
         }
 
-        imageUrls.push(data.url || data.full || data);
+        imageUrls.push({
+          thumbnail: data.thumbnail || data.url || data.full || data,
+          full: data.full || data.url || data.thumbnail || data
+        });
       } catch (e) {
         console.error('Error al subir imagen:', e);
         alert(`Error subiendo una foto: ${e.message}. Revisá los formatos e intentá de nuevo.`);
@@ -563,7 +578,7 @@ async function submitPoint() {
       }
     }
   } else {
-    imageUrls.push('https://i.imgur.com/bLBkpWR.png');
+    imageUrls.push({ thumbnail: 'https://i.imgur.com/bLBkpWR.png', full: 'https://i.imgur.com/bLBkpWR.png' });
   }
 
   let horarios = {};
@@ -621,7 +636,12 @@ async function submitPoint() {
     const marker = L.marker([latitude, longitude], { icon: icons[category] });
     marker.bindPopup(createPopupContent(title, user, description, address, category, imageUrls, 'temporal', horarios, id), { className: '' });
     marker.on('popupopen', () => {
-      attachPopupImageEvents(document.querySelector(`.leaflet-popup-content .custom-popup`), imageUrls, category, id);
+      const popupElement = document.querySelector(`.leaflet-popup-content .custom-popup`);
+      if (popupElement) {
+        attachPopupImageEvents(popupElement, imageUrls, category, id);
+      } else {
+        console.error(`Punto ${id} - No se encontró .custom-popup al abrir el popup`);
+      }
     });
     marker.on('click', (e) => {
       L.DomEvent.stopPropagation(e);
