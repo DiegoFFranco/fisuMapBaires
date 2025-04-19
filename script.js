@@ -59,6 +59,7 @@ Object.keys(layersConfig).forEach(layer => {
 });
 
 function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios, id) {
+  console.log(`Punto ${id} - Generando popup`, { title, user, description, address, layer, imageUrls, status, horarios });
   const isLightBackground = ['yellow', 'pink', 'orange'].includes(layersConfig[layer].color);
   const popupColor = layersConfig[layer].color;
   const cleanDescription = (description || '').replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
@@ -70,20 +71,19 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
 
   console.log(`Punto ${id} - Imágenes disponibles:`, JSON.stringify(imageUrls.map((url, index) => ({ index, url })), null, 2));
 
-  const thumbnailUrls = imageUrls.map(url => {
-    console.log(`Punto ${id} - Cargando imagen para popup [index: ${imageUrls.indexOf(url)}]: ${url}`);
-    return typeof url === 'string' ? url : url.full || url;
-  });
+  const images = Array.isArray(imageUrls) ? imageUrls : [];
+  const imageCount = images.length;
+  const currentIndex = imageCount > 0 ? 0 : -1;
 
   let imageContent = '';
-  if (thumbnailUrls.length > 0) {
+  if (imageCount > 0) {
     imageContent = `
       <div class="popup-image-container">
-        <img class="popup-image" src="${thumbnailUrls[0]}" alt="Imagen del punto" data-index="0" data-layer="${layer}" data-id="${id}">
-        <div class="popup-image-counter">1 de ${thumbnailUrls.length}</div>
-        ${thumbnailUrls.length > 1 ? `
-          <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', [${thumbnailUrls.map(url => `'${url}'`).join(',')}], '${layer}')">◄</span>
-          <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', [${thumbnailUrls.map(url => `'${url}'`).join(',')}], '${layer}')">►</span>
+        <img class="popup-image" src="${images[currentIndex]}" alt="Imagen del punto" data-index="${currentIndex}" data-layer="${layer}" data-id="${id}">
+        <div class="popup-image-counter">${currentIndex + 1} de ${imageCount}</div>
+        ${imageCount > 1 ? `
+          <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', [${images.map(url => `'${url}'`).join(',')}], '${layer}')">◄</span>
+          <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', [${images.map(url => `'${url}'`).join(',')}], '${layer}')">►</span>
         ` : ''}
       </div>
     `;
@@ -116,11 +116,12 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
 function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
   const imgElement = popup.querySelector('.popup-image');
   if (imgElement) {
-    const index = parseInt(imgElement.getAttribute('data-index')) || 0;
+    const index = parseInt(imgElement.getAttribute('data-index'), 10);
     imgElement.addEventListener('click', () => {
       console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${index}]: ${imageUrls[index]}`);
       showOverlay(imageUrls[index], layer, imageUrls, index, pointId);
     });
+    console.log(`Punto ${pointId} - Click handler attached to popup image`);
   } else {
     console.error(`Punto ${pointId} - No se encontró el elemento .popup-image`);
   }
@@ -128,7 +129,7 @@ function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
 
 function navigatePopupImages(direction, pointId, imageUrls, layer) {
   const popup = document.querySelector(`.leaflet-popup-content .custom-popup`);
-  let currentIndex = parseInt(popup.querySelector('.popup-image-counter').textContent.split(' ')[0]) - 1;
+  let currentIndex = parseInt(popup.querySelector('.popup-image').getAttribute('data-index'), 10);
   currentIndex += direction;
   if (currentIndex < 0) currentIndex = imageUrls.length - 1;
   if (currentIndex >= imageUrls.length) currentIndex = 0;
