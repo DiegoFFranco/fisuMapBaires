@@ -116,14 +116,13 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
 function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
   const imgElement = popup.querySelector('.popup-image');
   if (imgElement) {
-    // Remover cualquier manejador de eventos previo para evitar duplicados
-    imgElement.removeEventListener('click', imgElement.onclick);
+    imgElement.removeEventListener('click', imgElement.onclick); // Limpiar eventos previos
     const index = parseInt(imgElement.getAttribute('data-index'), 10);
     imgElement.addEventListener('click', () => {
       console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${index}]: ${imageUrls[index].full}`);
       showOverlay(imageUrls, layer, index, pointId);
     });
-    console.log(`Punto ${pointId} - Click handler attached to popup image [index: ${index}]`);
+    console.log(`Punto ${pointId} - Evento de clic asignado a imagen del popup [index: ${index}]`);
   } else {
     console.error(`Punto ${pointId} - No se encontró el elemento .popup-image`);
   }
@@ -142,7 +141,6 @@ function navigatePopupImages(direction, pointId, imageUrls, layer) {
   popup.querySelector('.popup-image-counter').textContent = `${currentIndex + 1} de ${imageUrls.length}`;
   console.log(`Punto ${pointId} - Navegando en popup a imagen [index: ${currentIndex}]: ${imageUrls[currentIndex].thumbnail}`);
 
-  // Reasignar el manejador de clic para la nueva imagen
   imgElement.removeEventListener('click', imgElement.onclick);
   imgElement.addEventListener('click', () => {
     console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex].full}`);
@@ -221,7 +219,6 @@ async function loadPoints() {
       const category = data.properties?.category || 'fisuras';
       counts[category]++;
 
-      // Asumimos que imageUrls es un arreglo de objetos { thumbnail, full }
       const imageUrls = (data.properties?.imageUrls || data.imageUrls || []).map(url => ({
         thumbnail: url.thumbnail || url.full,
         full: url.full || url.thumbnail
@@ -258,8 +255,8 @@ async function loadPoints() {
         const { name, description, user, address, imageUrls, category, status, horarios, id } = feature.properties;
         const popupContent = createPopupContent(name, user, description, address, category, imageUrls, status, horarios, id);
         layerFeature.bindPopup(popupContent, { className: '' });
-        layerFeature.on('popupopen', () => {
-          const popupElement = document.querySelector(`.leaflet-popup-content .custom-popup`);
+        layerFeature.on('popupopen', (e) => {
+          const popupElement = e.popup._contentNode.querySelector('.custom-popup');
           if (popupElement) {
             attachPopupImageEvents(popupElement, imageUrls, category, id);
           } else {
@@ -635,8 +632,8 @@ async function submitPoint() {
 
     const marker = L.marker([latitude, longitude], { icon: icons[category] });
     marker.bindPopup(createPopupContent(title, user, description, address, category, imageUrls, 'temporal', horarios, id), { className: '' });
-    marker.on('popupopen', () => {
-      const popupElement = document.querySelector(`.leaflet-popup-content .custom-popup`);
+    marker.on('popupopen', (e) => {
+      const popupElement = e.popup._contentNode.querySelector('.custom-popup');
       if (popupElement) {
         attachPopupImageEvents(popupElement, imageUrls, category, id);
       } else {
