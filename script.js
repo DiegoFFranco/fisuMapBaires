@@ -87,6 +87,8 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
         ` : ''}
       </div>
     `;
+  } else {
+    imageContent = `<div class="popup-no-image">No hay imágenes disponibles</div>`;
   }
 
   let popupContent = `
@@ -103,9 +105,9 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   if (layer === 'comercios-fisuras' && horarios) {
     popupContent += `
       <div class="detail"><b>Horarios:</b><br>
-      - Lunes a Viernes: ${horarios.lunesAViernes.apertura || 'Cerrado'} - ${horarios.lunesAViernes.cierre || ''}<br>
-      - Sábado: ${horarios.sabado.apertura || 'Cerrado'} - ${horarios.sabado.cierre || ''}<br>
-      - Domingo: ${horarios.domingo.apertura || 'Cerrado'} - ${horarios.domingo.cierre || ''}</div>
+      - Lunes a Viernes: ${horarios.lunesAViernes?.apertura || 'Cerrado'} - ${horarios.lunesAViernes?.cierre || ''}<br>
+      - Sábado: ${horarios.sabado?.apertura || 'Cerrado'} - ${horarios.sabado?.cierre || ''}<br>
+      - Domingo: ${horarios.domingo?.apertura || 'Cerrado'} - ${horarios.domingo?.cierre || ''}</div>
     `;
   }
 
@@ -116,7 +118,7 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
 function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
   const imgElement = popup.querySelector('.popup-image');
   if (imgElement) {
-    imgElement.removeEventListener('click', imgElement.onclick); // Limpiar eventos previos
+    imgElement.removeEventListener('click', imgElement.onclick);
     const index = parseInt(imgElement.getAttribute('data-index'), 10);
     imgElement.addEventListener('click', () => {
       console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${index}]: ${imageUrls[index].full}`);
@@ -124,34 +126,40 @@ function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
     });
     console.log(`Punto ${pointId} - Evento de clic asignado a imagen del popup [index: ${index}]`);
   } else {
-    console.error(`Punto ${pointId} - No se encontró el elemento .popup-image`);
+    console.log(`Punto ${pointId} - No hay imagen para asignar evento de clic`);
   }
 }
 
 function navigatePopupImages(direction, pointId, imageUrlsStr, layer) {
-  const imageUrls = JSON.parse(imageUrlsStr);
-  console.log(`Punto ${pointId} - imageUrls en navigatePopupImages:`, imageUrls);
-  const popup = document.querySelector(`.leaflet-popup-content .custom-popup`);
-  if (!popup) {
-    console.error(`Punto ${pointId} - No se encontró el popup`);
-    return;
+  try {
+    const imageUrls = JSON.parse(imageUrlsStr);
+    console.log(`Punto ${pointId} - imageUrls en navigatePopupImages:`, imageUrls);
+    const popup = document.querySelector(`.leaflet-popup-content .custom-popup`);
+    if (!popup) {
+      console.error(`Punto ${pointId} - No se encontró el popup`);
+      return;
+    }
+    let currentIndex = parseInt(popup.querySelector('.popup-image')?.getAttribute('data-index'), 10);
+    currentIndex += direction;
+    if (currentIndex < 0) currentIndex = imageUrls.length - 1;
+    if (currentIndex >= imageUrls.length) currentIndex = 0;
+
+    const imgElement = popup.querySelector('.popup-image');
+    if (imgElement) {
+      imgElement.src = imageUrls[currentIndex].thumbnail;
+      imgElement.setAttribute('data-index', currentIndex);
+      popup.querySelector('.popup-image-counter').textContent = `${currentIndex + 1} de ${imageUrls.length}`;
+      console.log(`Punto ${pointId} - Navegando en popup a imagen [index: ${currentIndex}]: ${imageUrls[currentIndex].thumbnail}`);
+
+      imgElement.removeEventListener('click', imgElement.onclick);
+      imgElement.addEventListener('click', () => {
+        console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex].full}`);
+        showOverlay(imageUrls, layer, currentIndex, pointId);
+      });
+    }
+  } catch (error) {
+    console.error(`Punto ${pointId} - Error en navigatePopupImages:`, error);
   }
-  let currentIndex = parseInt(popup.querySelector('.popup-image').getAttribute('data-index'), 10);
-  currentIndex += direction;
-  if (currentIndex < 0) currentIndex = imageUrls.length - 1;
-  if (currentIndex >= imageUrls.length) currentIndex = 0;
-
-  const imgElement = popup.querySelector('.popup-image');
-  imgElement.src = imageUrls[currentIndex].thumbnail;
-  imgElement.setAttribute('data-index', currentIndex);
-  popup.querySelector('.popup-image-counter').textContent = `${currentIndex + 1} de ${imageUrls.length}`;
-  console.log(`Punto ${pointId} - Navegando en popup a imagen [index: ${currentIndex}]: ${imageUrls[currentIndex].thumbnail}`);
-
-  imgElement.removeEventListener('click', imgElement.onclick);
-  imgElement.addEventListener('click', () => {
-    console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex].full}`);
-    showOverlay(imageUrls, layer, currentIndex, pointId);
-  });
 }
 
 function hideOverlay() {
@@ -162,6 +170,10 @@ function hideOverlay() {
 }
 
 function showOverlay(imageUrls, layer, index, pointId) {
+  if (!imageUrls || imageUrls.length === 0) {
+    console.log(`Punto ${pointId} - No hay imágenes para mostrar en overlay`);
+    return;
+  }
   currentImages = imageUrls;
   currentImageIndex = index;
   const overlay = document.getElementById('imageOverlay');
@@ -181,6 +193,10 @@ function showOverlay(imageUrls, layer, index, pointId) {
 }
 
 function navigateImages(direction, layer, pointId) {
+  if (!currentImages || currentImages.length === 0) {
+    console.log(`Punto ${pointId} - No hay imágenes para navegar en overlay`);
+    return;
+  }
   currentImageIndex += direction;
   if (currentImageIndex < 0) currentImageIndex = currentImages.length - 1;
   if (currentImageIndex >= currentImages.length) currentImageIndex = 0;
@@ -263,10 +279,10 @@ async function loadPoints() {
         layerFeature.bindPopup(popupContent, { className: '' });
         layerFeature.on('popupopen', (e) => {
           const popupElement = e.popup._contentNode.querySelector('.custom-popup');
-          if (popupElement) {
+          if (popupElement && imageUrls.length > 0) {
             attachPopupImageEvents(popupElement, imageUrls, category, id);
           } else {
-            console.error(`Punto ${id} - No se encontró .custom-popup al abrir el popup`);
+            console.log(`Punto ${id} - No se asignaron eventos de imagen (sin imágenes o popup no encontrado)`);
           }
         });
         layerFeature.on('click', (e) => {
@@ -284,9 +300,7 @@ async function loadPoints() {
     });
   } catch (error) {
     console.error('Error al cargar puntos desde Firestore:', error);
-    Object.keys(clusterGroups).forEach(layer => {
-      document.getElementById(`${layer}Count`).textContent = `(0)`;
-    });
+    alert('Error cargando puntos. Por favor, intentá de nuevo más tarde.');
   }
 }
 
@@ -453,9 +467,6 @@ function toggleMode(category) {
     hasAddedPoint = false;
 
     document.getElementById('pointForm').style.display = 'block';
-    console.log('Mostrando el formulario, #pointForm display:', document.getElementById('pointForm').style.display);
-    console.log('Botones presentes - searchAddressBtn:', document.getElementById('searchAddressBtn'), 'currentLocationBtn:', document.getElementById('currentLocationBtn'));
-    console.log('Contenedor de botones presente - button-container:', document.getElementById('button-container'), document.getElementById('button-container')?.style.display);
     document.getElementById('layerControls').style.display = 'none';
     document.getElementById('selectAllBtn').style.display = 'none';
     document.getElementById('deselectAllBtn').style.display = 'none';
@@ -640,10 +651,10 @@ async function submitPoint() {
     marker.bindPopup(createPopupContent(title, user, description, address, category, imageUrls, 'temporal', horarios, id), { className: '' });
     marker.on('popupopen', (e) => {
       const popupElement = e.popup._contentNode.querySelector('.custom-popup');
-      if (popupElement) {
+      if (popupElement && imageUrls.length > 0) {
         attachPopupImageEvents(popupElement, imageUrls, category, id);
       } else {
-        console.error(`Punto ${id} - No se encontró .custom-popup al abrir el popup`);
+        console.log(`Punto ${id} - No se asignaron eventos de imagen (sin imágenes o popup no encontrado)`);
       }
     });
     marker.on('click', (e) => {
@@ -766,42 +777,21 @@ function resetForm() {
   if (!isEditing) {
     let selectedLayersCount = 0;
     let selectedLayer = null;
-    console.log('Verificando checkboxes en modo visor...');
     Object.keys(clusterGroups).forEach(layer => {
       const checkbox = document.getElementById(`${layer}Check`);
-      if (checkbox) {
-        console.log(`Checkbox ${layer}Check:`, checkbox.checked);
-        if (checkbox.checked) {
-          selectedLayersCount++;
-          selectedLayer = layer;
-        }
-      } else {
-        console.error(`Checkbox ${layer}Check no encontrado en el DOM`);
+      if (checkbox?.checked) {
+        selectedLayersCount++;
+        selectedLayer = layer;
       }
     });
-    console.log('Capas seleccionadas en modo visor:', selectedLayersCount);
-    console.log('Capa seleccionada en modo visor:', selectedLayer);
-    console.log('lastUsedCategory:', lastUsedCategory);
-
     if (selectedLayersCount === 1) {
-      if (selectedLayer === lastUsedCategory) {
-        selectedCategory = lastUsedCategory;
-        console.log('Usando lastUsedCategory (misma capa seleccionada):', selectedCategory);
-      } else {
-        selectedCategory = selectedLayer;
-        console.log('Usando capa seleccionada en modo visor (distinta a lastUsedCategory):', selectedCategory);
-      }
-    } else {
-      selectedCategory = 'fisuras';
-      console.log('Usando categoría predeterminada (0 o más de 1 capa seleccionada):', selectedCategory);
+      selectedCategory = selectedLayer;
     }
   } else if (lastUsedCategory) {
     selectedCategory = lastUsedCategory;
-    console.log('Usando lastUsedCategory en modo editor:', selectedCategory);
   }
 
   document.getElementById('layerSelect').value = selectedCategory;
-  console.log('layerSelect establecido a:', selectedCategory);
 
   const sameSchedule = document.getElementById('sameSchedule');
   const sameApertura = document.getElementById('sameApertura');
@@ -834,15 +824,6 @@ function resetForm() {
   } else {
     horariosSection.style.display = 'none';
   }
-
-  console.log('Formulario limpiado:');
-  console.log('addressInput:', document.getElementById('addressInput').value);
-  console.log('userInput:', document.getElementById('userInput').value);
-  console.log('titleInput:', document.getElementById('titleInput').value);
-  console.log('descriptionInput:', document.getElementById('descriptionInput').value);
-  console.log('photoInput:', document.getElementById('photoInput').value);
-  console.log('layerSelect:', document.getElementById('layerSelect').value);
-  console.log('horariosSection display:', horariosSection.style.display);
 }
 
 document.getElementById('layerSelect').addEventListener('change', updateEditorLayer);

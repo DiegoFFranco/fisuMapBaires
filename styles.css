@@ -405,3 +405,9 @@ button {
   margin-top: 5px;
   font-size: 14px;
 }
+
+.popup-no-image {
+  text-align: center;
+  font-size: 14px;
+  color: #ccc;
+}

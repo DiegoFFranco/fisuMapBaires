@@ -115,25 +115,22 @@
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
     import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
     async function loadEnv() {
-      console.log('Intentando cargar variables de entorno desde /.netlify/functions/get-env...');
+      console.log('Loading environment variables from /.netlify/functions/get-env...');
       try {
         const response = await fetch('/.netlify/functions/get-env');
-        console.log('Respuesta de la Netlify Function:', response);
         if (!response.ok) {
-          throw new Error(`Error al cargar las variables de entorno: ${response.status} ${response.statusText}`);
+          throw new Error(`Failed to load environment variables: ${response.status} ${response.statusText}`);
         }
         const env = await response.json();
-        console.log('Variables de entorno cargadas:', env);
         return env;
       } catch (error) {
-        console.error('Error al obtener las variables de entorno:', error);
+        console.error('Error fetching environment variables:', error);
         throw error;
       }
     }
     window.initializeApp = async function() {
       try {
         const env = await loadEnv();
-        console.log('Configurando Firebase con:', env);
         const firebaseConfig = {
           apiKey: env.FIREBASE_API_KEY,
           authDomain: env.FIREBASE_AUTH_DOMAIN,
@@ -142,33 +139,27 @@
           messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
           appId: env.FIREBASE_APP_ID
         };
-        console.log('Inicializando Firebase...');
         const app = initializeApp(firebaseConfig);
-        console.log('Firebase inicializado:', app);
         const db = getFirestore(app);
-        console.log('Firestore inicializado:', db);
         window.db = db;
         window.collection = collection;
         window.getDocs = getDocs;
         window.addDoc = addDoc;
         window.serverTimestamp = serverTimestamp;
-        console.log('Cargando script.js...');
         const script = document.createElement('script');
         script.type = 'module';
         script.src = 'script.js';
         script.onload = () => {
-          console.log('script.js cargado, inicializando la app...');
           window.startApp();
         };
         document.body.appendChild(script);
       } catch (error) {
-        console.error('Error al inicializar Firebase:', error);
+        console.error('Error initializing Firebase:', error);
       }
     };
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('DOM cargado, inicializando la app...');
       window.initializeApp();
     });
-  </script>  
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'931a3e6258d2bfe3',t:'MTc0NDg3NTMwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+  </script>
+</body>
 </html>
