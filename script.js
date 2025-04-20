@@ -82,8 +82,8 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
         <img class="popup-image" src="${images[currentIndex].thumbnail}" alt="Imagen del punto" data-index="${currentIndex}" data-layer="${layer}" data-id="${id}">
         <div class="popup-image-counter">${currentIndex + 1} de ${imageCount}</div>
         ${imageCount > 1 ? `
-          <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', [${images.map(img => JSON.stringify(img)).join(',')}], '${layer}')">◄</span>
-          <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', [${images.map(img => JSON.stringify(img)).join(',')}], '${layer}')">►</span>
+          <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', '${JSON.stringify(images)}', '${layer}')">◄</span>
+          <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', '${JSON.stringify(images)}', '${layer}')">►</span>
         ` : ''}
       </div>
     `;
@@ -128,8 +128,14 @@ function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
   }
 }
 
-function navigatePopupImages(direction, pointId, imageUrls, layer) {
+function navigatePopupImages(direction, pointId, imageUrlsStr, layer) {
+  const imageUrls = JSON.parse(imageUrlsStr);
+  console.log(`Punto ${pointId} - imageUrls en navigatePopupImages:`, imageUrls);
   const popup = document.querySelector(`.leaflet-popup-content .custom-popup`);
+  if (!popup) {
+    console.error(`Punto ${pointId} - No se encontró el popup`);
+    return;
+  }
   let currentIndex = parseInt(popup.querySelector('.popup-image').getAttribute('data-index'), 10);
   currentIndex += direction;
   if (currentIndex < 0) currentIndex = imageUrls.length - 1;
