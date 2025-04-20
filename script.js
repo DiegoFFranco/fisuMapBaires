@@ -82,8 +82,8 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
         <img class="popup-image" src="${images[currentIndex].thumbnail}" alt="Imagen del punto" data-index="${currentIndex}" data-layer="${layer}" data-id="${id}">
         <div class="popup-image-counter">${currentIndex + 1} de ${imageCount}</div>
         ${imageCount > 1 ? `
-          <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', '${JSON.stringify(images)}', '${layer}')">◄</span>
-          <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', '${JSON.stringify(images)}', '${layer}')">►</span>
+          <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', '${layer}')">◄</span>
+          <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', '${layer}')">►</span>
         ` : ''}
       </div>
     `;
@@ -130,33 +130,53 @@ function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
   }
 }
 
-function navigatePopupImages(direction, pointId, imageUrlsStr, layer) {
+function navigatePopupImages(direction, pointId, layer) {
   try {
-    const imageUrls = JSON.parse(imageUrlsStr);
-    console.log(`Punto ${pointId} - imageUrls en navigatePopupImages:`, imageUrls);
+    console.log(`Punto ${pointId} - Navegando en popup, dirección: ${direction}`);
     const popup = document.querySelector(`.leaflet-popup-content .custom-popup`);
     if (!popup) {
       console.error(`Punto ${pointId} - No se encontró el popup`);
       return;
     }
-    let currentIndex = parseInt(popup.querySelector('.popup-image')?.getAttribute('data-index'), 10);
+
+    // Buscar el marcador correspondiente en clusterGroups
+    let imageUrls = [];
+    let found = false;
+    Object.values(clusterGroups[layer].getLayers()).forEach(marker => {
+      if (marker.feature?.properties?.id === pointId) {
+        imageUrls = marker.feature.properties.imageUrls || [];
+        found = true;
+      }
+    });
+
+    if (!found || imageUrls.length === 0) {
+      console.error(`Punto ${pointId} - No se encontraron imágenes para el punto`);
+      return;
+    }
+
+    console.log(`Punto ${pointId} - Imágenes encontradas:`, imageUrls);
+
+    const imgElement = popup.querySelector('.popup-image');
+    if (!imgElement) {
+      console.error(`Punto ${pointId} - No se encontró la imagen en el popup`);
+      return;
+    }
+
+    let currentIndex = parseInt(imgElement.getAttribute('data-index'), 10);
     currentIndex += direction;
     if (currentIndex < 0) currentIndex = imageUrls.length - 1;
     if (currentIndex >= imageUrls.length) currentIndex = 0;
 
-    const imgElement = popup.querySelector('.popup-image');
-    if (imgElement) {
-      imgElement.src = imageUrls[currentIndex].thumbnail;
-      imgElement.setAttribute('data-index', currentIndex);
-      popup.querySelector('.popup-image-counter').textContent = `${currentIndex + 1} de ${imageUrls.length}`;
-      console.log(`Punto ${pointId} - Navegando en popup a imagen [index: ${currentIndex}]: ${imageUrls[currentIndex].thumbnail}`);
+    imgElement.src = imageUrls[currentIndex].thumbnail;
+    imgElement.setAttribute('data-index', currentIndex);
+    popup.querySelector('.popup-image-counter').textContent = `${currentIndex + 1} de ${imageUrls.length}`;
+    console.log(`Punto ${pointId} - Actualizada imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex].thumbnail}`);
 
-      imgElement.removeEventListener('click', imgElement.onclick);
-      imgElement.addEventListener('click', () => {
-        console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex].full}`);
-        showOverlay(imageUrls, layer, currentIndex, pointId);
-      });
-    }
+    imgElement.removeEventListener('click', imgElement.onclick);
+    imgElement.addEventListener('click', () => {
+      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex].full}`);
+      showOverlay(imageUrls, layer, currentIndex, pointId);
+    });
   } catch (error) {
     console.error(`Punto ${pointId} - Error en navigatePopupImages:`, error);
   }
