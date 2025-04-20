@@ -7,6 +7,9 @@ let lastUsedCategory = null;
 let lastCreatedLayer = null;
 let previousSelectedLayers = [];
 let hasAddedPoint = false;
+let currentPointId = null;
+let imageCache = new Map(); // Caché para thumbnails
+let fullUrls = new Map(); // Almacenar URLs full temporalmente
 
 function truncateUrl(url, maxLength = 30) {
   if (url.length > maxLength) {
@@ -58,6 +61,28 @@ Object.keys(layersConfig).forEach(layer => {
   });
 });
 
+// Función para precargar thumbnails
+function preloadThumbnails(images) {
+    images.slice(0, 5).forEach(image => {
+        if (!imageCache.has(image.thumbnail)) {
+            const img = new Image();
+            img.src = image.thumbnail;
+            imageCache.set(image.thumbnail, img);
+        }
+    });
+}
+
+// Función para limpiar caché y URLs full
+function clearImageCache(pointId) {
+    if (pointId !== currentPointId) {
+        imageCache.clear();
+        fullUrls.clear();
+        currentPointId = null;
+        currentImages = [];
+        currentImageIndex = -1;
+    }
+}
+
 function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios, id) {
   console.log(`Punto ${id} - Generando popup`, { title, user, description, address, layer, imageUrls, status, horarios });
   const isLightBackground = ['yellow', 'pink', 'orange'].includes(layersConfig[layer].color);
@@ -73,14 +98,21 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
 
   const images = Array.isArray(imageUrls) ? imageUrls : [];
   const imageCount = images.length;
-  const currentIndex = imageCount > 0 ? 0 : -1;
+  
+  // Precargar thumbnails y guardar URLs full
+  clearImageCache(id);
+  currentPointId = id;
+  currentImages = images;
+  currentImageIndex = imageCount > 0 ? 0 : -1;
+  preloadThumbnails(images);
+  fullUrls.set(id, images.map(img => img.full));
 
   let imageContent = '';
   if (imageCount > 0) {
     imageContent = `
       <div class="popup-image-container">
-        <img class="popup-image" src="${images[currentIndex].thumbnail}" alt="Imagen del punto" data-index="${currentIndex}" data-layer="${layer}" data-id="${id}">
-        <div class="popup-image-counter">${currentIndex + 1} de ${imageCount}</div>
+        <img class="popup-image" src="${images[currentImageIndex].thumbnail}" alt="Imagen del punto" data-index="${currentImageIndex}" data-layer="${layer}" data-id="${id}">
+        <div class="popup-image-counter">${currentImageIndex + 1} de ${imageCount}</div>
         ${imageCount > 1 ? `
           <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', '${layer}')">◄</span>
           <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', '${layer}')">►</span>
@@ -133,28 +165,18 @@ function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
 function navigatePopupImages(direction, pointId, layer) {
   try {
     console.log(`Punto ${pointId} - Navegando en popup, dirección: ${direction}`);
+    if (pointId !== currentPointId || currentImages.length === 0) {
+      console.error(`Punto ${pointId} - Estado inválido: punto no coincide o sin imágenes`);
+      return;
+    }
+
     const popup = document.querySelector(`.leaflet-popup-content .custom-popup`);
     if (!popup) {
       console.error(`Punto ${pointId} - No se encontró el popup`);
       return;
     }
 
-    // Buscar el marcador correspondiente en clusterGroups
-    let imageUrls = [];
-    let found = false;
-    Object.values(clusterGroups[layer].getLayers()).forEach(marker => {
-      if (marker.feature?.properties?.id === pointId) {
-        imageUrls = marker.feature.properties.imageUrls || [];
-        found = true;
-      }
-    });
-
-    if (!found || imageUrls.length === 0) {
-      console.error(`Punto ${pointId} - No se encontraron imágenes para el punto`);
-      return;
-    }
-
-    console.log(`Punto ${pointId} - Imágenes encontradas:`, imageUrls);
+    currentImageIndex = (currentImageIndex + direction + currentImages.length) % currentImages.length;
 
     const imgElement = popup.querySelector('.popup-image');
     if (!imgElement) {
@@ -162,20 +184,15 @@ function navigatePopupImages(direction, pointId, layer) {
       return;
     }
 
-    let currentIndex = parseInt(imgElement.getAttribute('data-index'), 10);
-    currentIndex += direction;
-    if (currentIndex < 0) currentIndex = imageUrls.length - 1;
-    if (currentIndex >= imageUrls.length) currentIndex = 0;
-
-    imgElement.src = imageUrls[currentIndex].thumbnail;
-    imgElement.setAttribute('data-index', currentIndex);
-    popup.querySelector('.popup-image-counter').textContent = `${currentIndex + 1} de ${imageUrls.length}`;
-    console.log(`Punto ${pointId} - Actualizada imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex].thumbnail}`);
+    imgElement.src = currentImages[currentImageIndex].thumbnail;
+    imgElement.setAttribute('data-index', currentImageIndex);
+    popup.querySelector('.popup-image-counter').textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
+    console.log(`Punto ${pointId} - Actualizada imagen del popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].thumbnail}`);
 
     imgElement.removeEventListener('click', imgElement.onclick);
     imgElement.addEventListener('click', () => {
-      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentIndex}]: ${imageUrls[currentIndex].full}`);
-      showOverlay(imageUrls, layer, currentIndex, pointId);
+      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].full}`);
+      showOverlay(currentImages, layer, currentImageIndex, pointId);
     });
   } catch (error) {
     console.error(`Punto ${pointId} - Error en navigatePopupImages:`, error);
@@ -190,14 +207,14 @@ function hideOverlay() {
 }
 
 function showOverlay(imageUrls, layer, index, pointId) {
-  if (!imageUrls || imageUrls.length === 0) {
+  if (!imageUrls || imageUrls.length === 0 || !fullUrls.has(pointId)) {
     console.log(`Punto ${pointId} - No hay imágenes para mostrar en overlay`);
     return;
   }
   currentImages = imageUrls;
   currentImageIndex = index;
   const overlay = document.getElementById('imageOverlay');
-  console.log(`Punto ${pointId} - Abriendo overlay con imagen [index: ${index}]: ${imageUrls[index].full}`);
+  console.log(`Punto ${pointId} - Abriendo overlay con imagen [index: ${index}]: ${fullUrls.get(pointId)[index]}`);
 
   const navButtons = imageUrls.length > 1 ? `
     <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}', '${pointId}'); event.stopPropagation();">◄</span>
@@ -206,25 +223,22 @@ function showOverlay(imageUrls, layer, index, pointId) {
 
   overlay.innerHTML = `
     ${navButtons}
-    <img src="${imageUrls[index].full}" style="border-color: ${layersConfig[layer].color}">
+    <img src="${fullUrls.get(pointId)[index]}" style="border-color: ${layersConfig[layer].color}">
   `;
   overlay.style.display = 'flex';
-  console.log(`Punto ${pointId} - Mostrando imagen en overlay [index: ${index}]: ${imageUrls[index].full}`);
+  console.log(`Punto ${pointId} - Mostrando imagen en overlay [index: ${index}]: ${fullUrls.get(pointId)[index]}`);
 }
 
 function navigateImages(direction, layer, pointId) {
-  if (!currentImages || currentImages.length === 0) {
+  if (!currentImages || currentImages.length === 0 || !fullUrls.has(pointId)) {
     console.log(`Punto ${pointId} - No hay imágenes para navegar en overlay`);
     return;
   }
-  currentImageIndex += direction;
-  if (currentImageIndex < 0) currentImageIndex = currentImages.length - 1;
-  if (currentImageIndex >= currentImages.length) currentImageIndex = 0;
-
-  const overlay = document.getElementById('imageOverlay');
-  const url = currentImages[currentImageIndex].full;
+  currentImageIndex = (currentImageIndex + direction + currentImages.length) % currentImages.length;
+  const url = fullUrls.get(pointId)[currentImageIndex];
   console.log(`Punto ${pointId} - Navegando en overlay a imagen [index: ${currentImageIndex}]: ${url}`);
 
+  const overlay = document.getElementById('imageOverlay');
   const navButtons = currentImages.length > 1 ? `
     <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}', '${pointId}'); event.stopPropagation();">◄</span>
     <span class="nav-arrow next" onclick="navigateImages(1, '${layer}', '${pointId}'); event.stopPropagation();">►</span>
@@ -856,6 +870,11 @@ document.getElementById('searchAddressBtn').addEventListener('click', (e) => {
 document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
   e.preventDefault();
   getCurrentLocation();
+});
+
+// Limpiar caché al cerrar popup
+map.on('popupclose', () => {
+    clearImageCache(currentPointId);
 });
 
 window.startApp = function () {
