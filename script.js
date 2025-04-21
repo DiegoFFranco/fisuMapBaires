@@ -855,17 +855,30 @@ function resetForm() {
   }
 }
 
-document.getElementById('layerSelect').addEventListener('change', updateEditorLayer);
-document.getElementById('addPointBtn').addEventListener('click', () => toggleMode());
-document.getElementById('submitBtn').addEventListener('click', submitPoint);
-document.getElementById('searchAddressBtn').addEventListener('click', (e) => {
-  e.preventDefault();
-  geocodeAddress();
-});
-document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
-  e.preventDefault();
-  getCurrentLocation();
-});
+const layerSelect = document.getElementById('layerSelect');
+if (layerSelect) layerSelect.addEventListener('change', updateEditorLayer);
+
+const addPointBtn = document.getElementById('addPointBtn');
+if (addPointBtn) addPointBtn.addEventListener('click', () => toggleMode());
+
+const submitBtn = document.getElementById('submitBtn');
+if (submitBtn) submitBtn.addEventListener('click', submitPoint);
+
+const searchAddressBtn = document.getElementById('searchAddressBtn');
+if (searchAddressBtn) {
+  searchAddressBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    geocodeAddress();
+  });
+}
+
+const currentLocationBtn = document.getElementById('currentLocationBtn');
+if (currentLocationBtn) {
+  currentLocationBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    getCurrentLocation();
+  });
+}
 
 // Limpiar caché al cerrar popup
 map.on('popupclose', () => {
