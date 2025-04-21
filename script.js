@@ -165,35 +165,30 @@ function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
 function navigatePopupImages(direction, pointId, layer) {
   try {
     console.log(`Punto ${pointId} - Navegando en popup, dirección: ${direction}`);
-    if (pointId !== currentPointId || currentImages.length === 0) {
+    if (pointId !== currentPointId || !currentImages || currentImages.length === 0) {
       console.error(`Punto ${pointId} - Estado inválido: punto no coincide o sin imágenes`);
       return;
     }
 
-    const popup = document.querySelector(`.leaflet-popup-content .custom-popup`);
+    const popup = document.querySelector('.leaflet-popup-content .custom-popup');
     if (!popup) {
       console.error(`Punto ${pointId} - No se encontró el popup`);
       return;
     }
 
+    // Actualiza el índice de la imagen actual
     currentImageIndex = (currentImageIndex + direction + currentImages.length) % currentImages.length;
 
+    // Actualiza la imagen en el popup
     const imgElement = popup.querySelector('.popup-image');
-    if (!imgElement) {
+    if (imgElement) {
+      imgElement.src = currentImages[currentImageIndex].thumbnail;
+      imgElement.setAttribute('data-index', currentImageIndex);
+      popup.querySelector('.popup-image-counter').textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
+      console.log(`Punto ${pointId} - Imagen actualizada en popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].thumbnail}`);
+    } else {
       console.error(`Punto ${pointId} - No se encontró la imagen en el popup`);
-      return;
     }
-
-    imgElement.src = currentImages[currentImageIndex].thumbnail;
-    imgElement.setAttribute('data-index', currentImageIndex);
-    popup.querySelector('.popup-image-counter').textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
-    console.log(`Punto ${pointId} - Actualizada imagen del popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].thumbnail}`);
-
-    imgElement.removeEventListener('click', imgElement.onclick);
-    imgElement.addEventListener('click', () => {
-      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].full}`);
-      showOverlay(currentImages, layer, currentImageIndex, pointId);
-    });
   } catch (error) {
     console.error(`Punto ${pointId} - Error en navigatePopupImages:`, error);
   }
