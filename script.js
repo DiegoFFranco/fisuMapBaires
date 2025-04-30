@@ -150,13 +150,11 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
 function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
   const imgElement = popup.querySelector('.popup-image');
   if (imgElement) {
-    imgElement.removeEventListener('click', imgElement.onclick);
-    const index = parseInt(imgElement.getAttribute('data-index'), 10);
-    imgElement.addEventListener('click', () => {
-      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${index}]: ${imageUrls[index].full}`);
-      showOverlay(imageUrls, layer, index, pointId);
-    });
-    console.log(`Punto ${pointId} - Evento de clic asignado a imagen del popup [index: ${index}]`);
+    imgElement.onclick = () => {
+      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].full}`);
+      showOverlay(imageUrls, layer, currentImageIndex, pointId);
+    };
+    console.log(`Punto ${pointId} - Evento de clic asignado a imagen del popup [index: ${currentImageIndex}]`);
   } else {
     console.log(`Punto ${pointId} - No hay imagen para asignar evento de clic`);
   }
@@ -170,24 +168,23 @@ function navigatePopupImages(direction, pointId, layer) {
       return;
     }
 
-    const popup = document.querySelector('.leaflet-popup-content .custom-popup');
-    if (!popup) {
-      console.error(`Punto ${pointId} - No se encontró el popup`);
-      return;
-    }
-
     // Actualiza el índice de la imagen actual
     currentImageIndex = (currentImageIndex + direction + currentImages.length) % currentImages.length;
 
     // Actualiza la imagen en el popup
-    const imgElement = popup.querySelector('.popup-image');
-    if (imgElement) {
-      imgElement.src = currentImages[currentImageIndex].thumbnail;
-      imgElement.setAttribute('data-index', currentImageIndex);
-      popup.querySelector('.popup-image-counter').textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
-      console.log(`Punto ${pointId} - Imagen actualizada en popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].thumbnail}`);
+    const popup = document.querySelector('.leaflet-popup-content .custom-popup');
+    if (popup) {
+      const imgElement = popup.querySelector('.popup-image');
+      if (imgElement) {
+        imgElement.src = currentImages[currentImageIndex].thumbnail;
+        imgElement.setAttribute('data-index', currentImageIndex);
+        popup.querySelector('.popup-image-counter').textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
+        console.log(`Punto ${pointId} - Imagen actualizada en popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].thumbnail}`);
+      } else {
+        console.error(`Punto ${pointId} - No se encontró la imagen en el popup`);
+      }
     } else {
-      console.error(`Punto ${pointId} - No se encontró la imagen en el popup`);
+      console.error(`Punto ${pointId} - No se encontró el popup`);
     }
   } catch (error) {
     console.error(`Punto ${pointId} - Error en navigatePopupImages:`, error);
