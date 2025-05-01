@@ -350,7 +350,16 @@ async function loadPoints() {
         onEachFeature: (feature, layerFeature) => {
           const { name, description, user, address, imageUrls, category, status, horarios, id } = feature.properties;
           const popupContent = createPopupContentDynamic(name, user, description, address, category, imageUrls, status, horarios, id);
+        
+          // Vincular el popup al marcador
           layerFeature.bindPopup(popupContent, { className: '' });
+        
+          // Agregar el marcador al clusterGroup correspondiente
+          if (clusterGroups[category]) {
+            clusterGroups[category].addLayer(layerFeature);
+          } else {
+            console.error(`Categoría no encontrada en clusterGroups: ${category}`);
+          }
         }
     });
 
