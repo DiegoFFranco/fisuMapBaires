@@ -83,6 +83,58 @@ function clearImageCache(pointId) {
     }
 }
 
+function createPopupContentDynamic(title, user, description, address, layer, imageUrls, status, horarios, id) {
+  console.log(`Punto ${id} - Generando popup dinámico`, { title, user, description, address, layer, imageUrls, status, horarios });
+
+  // Crear el contenedor principal del popup
+  const container = L.DomUtil.create('div', 'custom-popup');
+  container.style.backgroundColor = layersConfig[layer].color;
+
+  // Agregar contenido estático
+  const titleElement = L.DomUtil.create('span', 'title', container);
+  titleElement.textContent = title;
+
+  const userElement = L.DomUtil.create('div', 'detail', container);
+  userElement.innerHTML = `<b>Usuario:</b> ${user}`;
+
+  const descriptionElement = L.DomUtil.create('div', 'detail', container);
+  descriptionElement.innerHTML = `<b>Descripción:</b> ${description || 'Sin descripción'}`;
+
+  const addressElement = L.DomUtil.create('div', 'detail', container);
+  addressElement.innerHTML = `<b>Dirección:</b> ${address || 'Sin dirección'}`;
+
+  const statusElement = L.DomUtil.create('div', 'detail', container);
+  statusElement.innerHTML = `<b>Estado:</b> ${status}`;
+
+  // Agregar contenedor de imágenes
+  if (imageUrls.length > 0) {
+    const imageContainer = L.DomUtil.create('div', 'popup-image-container', container);
+
+    const imgElement = L.DomUtil.create('img', 'popup-image', imageContainer);
+    imgElement.src = imageUrls[0].thumbnail;
+    imgElement.alt = 'Imagen del punto';
+    imgElement.dataset.index = 0;
+
+    const counterElement = L.DomUtil.create('div', 'popup-image-counter', imageContainer);
+    counterElement.textContent = `1 de ${imageUrls.length}`;
+
+    if (imageUrls.length > 1) {
+      const prevButton = L.DomUtil.create('span', 'popup-image-nav prev', imageContainer);
+      prevButton.textContent = '◄';
+      prevButton.onclick = () => navigatePopupImages(-1, id, layer, container);
+
+      const nextButton = L.DomUtil.create('span', 'popup-image-nav next', imageContainer);
+      nextButton.textContent = '►';
+      nextButton.onclick = () => navigatePopupImages(1, id, layer, container);
+    }
+  } else {
+    const noImageElement = L.DomUtil.create('div', 'popup-no-image', container);
+    noImageElement.textContent = 'No hay imágenes disponibles';
+  }
+
+  return container;
+}
+
 function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios, id) {
   console.log(`Punto ${id} - Generando popup`, { title, user, description, address, layer, imageUrls, status, horarios });
 
@@ -136,12 +188,12 @@ function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
   }
 }
 
-function navigatePopupImages(direction, pointId, layer) {
+function navigatePopupImages(direction, pointId, layer, container) {
   if (pointId !== currentPointId) {
     console.warn(`Punto ${pointId} - Actualizando currentPointId para sincronizar con el popup actual.`);
-    currentPointId = pointId; // Sincronizar el ID del punto actual
-    currentImages = fullUrls.get(pointId) || []; // Actualizar imágenes del punto actual
-    currentImageIndex = 0; // Reiniciar índice de imagen
+    currentPointId = pointId;
+    currentImages = fullUrls.get(pointId) || [];
+    currentImageIndex = 0;
   }
 
   if (!currentImages || currentImages.length === 0) {
@@ -151,19 +203,16 @@ function navigatePopupImages(direction, pointId, layer) {
 
   currentImageIndex = (currentImageIndex + direction + currentImages.length) % currentImages.length;
 
-  const popup = document.querySelector('.leaflet-popup-content .custom-popup');
-  if (popup) {
-    const imgElement = popup.querySelector('.popup-image');
-    if (imgElement) {
-      imgElement.src = currentImages[currentImageIndex].thumbnail;
-      imgElement.setAttribute('data-index', currentImageIndex);
-      popup.querySelector('.popup-image-counter').textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
-      console.log(`Punto ${pointId} - Imagen actualizada en popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].thumbnail}`);
-    } else {
-      console.error(`Punto ${pointId} - No se encontró la imagen en el popup`);
-    }
+  const imgElement = container.querySelector('.popup-image');
+  const counterElement = container.querySelector('.popup-image-counter');
+
+  if (imgElement && counterElement) {
+    imgElement.src = currentImages[currentImageIndex].thumbnail;
+    imgElement.dataset.index = currentImageIndex;
+    counterElement.textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
+    console.log(`Punto ${pointId} - Imagen actualizada en popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].thumbnail}`);
   } else {
-    console.error(`Punto ${pointId} - No se encontró el popup`);
+    console.error(`Punto ${pointId} - No se encontró el contenedor de la imagen o el contador`);
   }
 }
 
@@ -281,7 +330,7 @@ async function loadPoints() {
         const category = feature.properties.category;
         return L.marker(latlng, { icon: icons[category] });
       },
-      onEachFeature: (feature, layerFeature) => {
+      /* onEachFeature: (feature, layerFeature) => {
         const { name, description, user, address, imageUrls, category, status, horarios, id } = feature.properties;
         const popupContent = createPopupContent(name, user, description, address, category, imageUrls, status, horarios, id);
         layerFeature.bindPopup(popupContent, { className: '' });
@@ -297,7 +346,12 @@ async function loadPoints() {
           L.DomEvent.stopPropagation(e);
         });
         clusterGroups[category].addLayer(layerFeature);
-      }
+      } */
+        onEachFeature: (feature, layerFeature) => {
+          const { name, description, user, address, imageUrls, category, status, horarios, id } = feature.properties;
+          const popupContent = createPopupContentDynamic(name, user, description, address, category, imageUrls, status, horarios, id);
+          layerFeature.bindPopup(popupContent, { className: '' });
+        }
     });
 
     Object.keys(counts).forEach(layer => {
