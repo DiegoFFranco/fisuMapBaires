@@ -86,6 +86,9 @@ function clearImageCache(pointId) {
 function createPopupContentDynamic(title, user, description, address, layer, imageUrls, status, horarios, id) {
   console.log(`Punto ${id} - Generando popup dinámico`, { title, user, description, address, layer, imageUrls, status, horarios });
 
+  // Actualizar `fullUrls` con las URLs completas
+  fullUrls.set(id, imageUrls.map(img => img.full));
+
   // Crear el contenedor principal del popup
   const container = L.DomUtil.create('div', 'custom-popup');
   container.style.backgroundColor = layersConfig[layer].color;
