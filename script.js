@@ -151,20 +151,24 @@ function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
   const imgElement = popup.querySelector('.popup-image');
   if (imgElement) {
     imgElement.onclick = () => {
-      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].full}`);
+      console.log(`Punto ${pointId} - Clic en imagen del popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex]?.full}`);
       showOverlay(imageUrls, layer, currentImageIndex, pointId);
     };
     console.log(`Punto ${pointId} - Evento de clic asignado a imagen del popup [index: ${currentImageIndex}]`);
   } else {
-    console.log(`Punto ${pointId} - No hay imagen para asignar evento de clic`);
+    console.error(`Punto ${pointId} - No se encontró la imagen para asignar evento de clic`);
   }
 }
 
 function navigatePopupImages(direction, pointId, layer) {
   try {
     console.log(`Punto ${pointId} - Navegando en popup, dirección: ${direction}`);
-    if (pointId !== currentPointId || !currentImages || currentImages.length === 0) {
-      console.error(`Punto ${pointId} - Estado inválido: punto no coincide o sin imágenes`);
+    if (pointId !== currentPointId) {
+      console.error(`Punto ${pointId} - Estado inválido: el punto no coincide con el actual (${currentPointId})`);
+      return;
+    }
+    if (!currentImages || currentImages.length === 0) {
+      console.error(`Punto ${pointId} - Estado inválido: sin imágenes disponibles`);
       return;
     }
 
@@ -199,14 +203,21 @@ function hideOverlay() {
 }
 
 function showOverlay(imageUrls, layer, index, pointId) {
-  if (!imageUrls || imageUrls.length === 0 || !fullUrls.has(pointId)) {
-    console.log(`Punto ${pointId} - No hay imágenes para mostrar en overlay`);
+  if (!imageUrls || imageUrls.length === 0) {
+    console.error(`Punto ${pointId} - No hay imágenes disponibles para mostrar en overlay`);
     return;
   }
+  if (!fullUrls.has(pointId)) {
+    console.error(`Punto ${pointId} - No se encontraron URLs completas en fullUrls`);
+    return;
+  }
+
   currentImages = imageUrls;
   currentImageIndex = index;
   const overlay = document.getElementById('imageOverlay');
-  console.log(`Punto ${pointId} - Abriendo overlay con imagen [index: ${index}]: ${fullUrls.get(pointId)[index]}`);
+  const fullImageUrl = fullUrls.get(pointId)[index];
+
+  console.log(`Punto ${pointId} - Mostrando overlay con imagen [index: ${index}]: ${fullImageUrl}`);
 
   const navButtons = imageUrls.length > 1 ? `
     <span class="nav-arrow prev" onclick="navigateImages(-1, '${layer}', '${pointId}'); event.stopPropagation();">◄</span>
@@ -215,10 +226,9 @@ function showOverlay(imageUrls, layer, index, pointId) {
 
   overlay.innerHTML = `
     ${navButtons}
-    <img src="${fullUrls.get(pointId)[index]}" style="border-color: ${layersConfig[layer].color}">
+    <img src="${fullImageUrl}" style="border-color: ${layersConfig[layer].color}">
   `;
   overlay.style.display = 'flex';
-  console.log(`Punto ${pointId} - Mostrando imagen en overlay [index: ${index}]: ${fullUrls.get(pointId)[index]}`);
 }
 
 function navigateImages(direction, layer, pointId) {
