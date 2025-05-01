@@ -138,9 +138,10 @@ function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
 
 function navigatePopupImages(direction, pointId, layer) {
   if (pointId !== currentPointId) {
-    console.error(`Punto ${pointId} - Estado inválido: el punto no coincide con el actual (${currentPointId})`);
-    return;
+    console.warn(`Punto ${pointId} - Actualizando currentPointId para sincronizar con el popup actual.`);
+    currentPointId = pointId; // Sincronizar el ID del punto actual
   }
+
   if (!currentImages || currentImages.length === 0) {
     console.error(`Punto ${pointId} - Estado inválido: sin imágenes disponibles`);
     return;
@@ -155,7 +156,12 @@ function navigatePopupImages(direction, pointId, layer) {
       imgElement.src = currentImages[currentImageIndex].thumbnail;
       imgElement.setAttribute('data-index', currentImageIndex);
       popup.querySelector('.popup-image-counter').textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
+      console.log(`Punto ${pointId} - Imagen actualizada en popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].thumbnail}`);
+    } else {
+      console.error(`Punto ${pointId} - No se encontró la imagen en el popup`);
     }
+  } else {
+    console.error(`Punto ${pointId} - No se encontró el popup`);
   }
 }
 
