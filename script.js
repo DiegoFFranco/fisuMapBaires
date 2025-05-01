@@ -85,35 +85,22 @@ function clearImageCache(pointId) {
 
 function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios, id) {
   console.log(`Punto ${id} - Generando popup`, { title, user, description, address, layer, imageUrls, status, horarios });
-  const isLightBackground = ['yellow', 'pink', 'orange'].includes(layersConfig[layer].color);
-  const popupColor = layersConfig[layer].color;
-  const cleanDescription = (description || '').replace(/{{https:\/\/i\.imgur\.com\/\w+\.(?:jpg|png|jpeg|gif)}}/g, '').trim();
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const processedDescription = cleanDescription.replace(urlRegex, (url) => {
-    const truncated = truncateUrl(url);
-    return `<a href="${url}" target="_blank">${truncated}</a>`;
-  });
 
-  console.log(`Punto ${id} - Imágenes disponibles:`, JSON.stringify(imageUrls.map((img, index) => ({ index, thumbnail: img.thumbnail, full: img.full })), null, 2));
-
-  const images = Array.isArray(imageUrls) ? imageUrls : [];
-  const imageCount = images.length;
-  
-  // Precargar thumbnails y guardar URLs full
-  clearImageCache(id);
+  // Actualizar `currentPointId` y `currentImages`
   currentPointId = id;
-  currentImages = images;
-  currentImageIndex = imageCount > 0 ? 0 : -1;
-  preloadThumbnails(images);
-  fullUrls.set(id, images.map(img => img.full));
+  currentImages = imageUrls;
+  currentImageIndex = imageUrls.length > 0 ? 0 : -1;
+
+  // Actualizar `fullUrls` con las URLs completas
+  fullUrls.set(id, imageUrls.map(img => img.full));
 
   let imageContent = '';
-  if (imageCount > 0) {
+  if (imageUrls.length > 0) {
     imageContent = `
       <div class="popup-image-container">
-        <img class="popup-image" src="${images[currentImageIndex].thumbnail}" alt="Imagen del punto" data-index="${currentImageIndex}" data-layer="${layer}" data-id="${id}">
-        <div class="popup-image-counter">${currentImageIndex + 1} de ${imageCount}</div>
-        ${imageCount > 1 ? `
+        <img class="popup-image" src="${imageUrls[0].thumbnail}" alt="Imagen del punto" data-index="0" data-layer="${layer}" data-id="${id}">
+        <div class="popup-image-counter">1 de ${imageUrls.length}</div>
+        ${imageUrls.length > 1 ? `
           <span class="popup-image-nav prev" onclick="navigatePopupImages(-1, '${id}', '${layer}')">◄</span>
           <span class="popup-image-nav next" onclick="navigatePopupImages(1, '${id}', '${layer}')">►</span>
         ` : ''}
@@ -124,26 +111,15 @@ function createPopupContent(title, user, description, address, layer, imageUrls,
   }
 
   let popupContent = `
-    <div class="custom-popup ${isLightBackground ? 'light-text' : 'dark-text'}" style="background-color: ${popupColor};">
+    <div class="custom-popup" style="background-color: ${layersConfig[layer].color};">
       <span class="title">${title}</span>
-      <div class="detail"><b>ID:</b> ${id}</div>
       <div class="detail"><b>Usuario:</b> ${user}</div>
-      <div class="detail"><b>Descripción:</b> ${processedDescription || 'Sin descripción'}</div>
+      <div class="detail"><b>Descripción:</b> ${description || 'Sin descripción'}</div>
       <div class="detail"><b>Dirección:</b> ${address || 'Sin dirección'}</div>
       <div class="detail"><b>Estado:</b> ${status}</div>
       ${imageContent}
+    </div>
   `;
-
-  if (layer === 'comercios-fisuras' && horarios) {
-    popupContent += `
-      <div class="detail"><b>Horarios:</b><br>
-      - Lunes a Viernes: ${horarios.lunesAViernes?.apertura || 'Cerrado'} - ${horarios.lunesAViernes?.cierre || ''}<br>
-      - Sábado: ${horarios.sabado?.apertura || 'Cerrado'} - ${horarios.sabado?.cierre || ''}<br>
-      - Domingo: ${horarios.domingo?.apertura || 'Cerrado'} - ${horarios.domingo?.cierre || ''}</div>
-    `;
-  }
-
-  popupContent += `</div><style>.leaflet-popup-tip { background-color: ${popupColor}; }</style>`;
   return popupContent;
 }
 
@@ -161,37 +137,25 @@ function attachPopupImageEvents(popup, imageUrls, layer, pointId) {
 }
 
 function navigatePopupImages(direction, pointId, layer) {
-  try {
-    console.log(`Punto ${pointId} - Navegando en popup, dirección: ${direction}`);
-    if (pointId !== currentPointId) {
-      console.error(`Punto ${pointId} - Estado inválido: el punto no coincide con el actual (${currentPointId})`);
-      return;
-    }
-    if (!currentImages || currentImages.length === 0) {
-      console.error(`Punto ${pointId} - Estado inválido: sin imágenes disponibles`);
-      return;
-    }
+  if (pointId !== currentPointId) {
+    console.error(`Punto ${pointId} - Estado inválido: el punto no coincide con el actual (${currentPointId})`);
+    return;
+  }
+  if (!currentImages || currentImages.length === 0) {
+    console.error(`Punto ${pointId} - Estado inválido: sin imágenes disponibles`);
+    return;
+  }
 
-    // Actualiza el índice de la imagen actual
-    currentImageIndex = (currentImageIndex + direction + currentImages.length) % currentImages.length;
+  currentImageIndex = (currentImageIndex + direction + currentImages.length) % currentImages.length;
 
-    // Actualiza la imagen en el popup
-    const popup = document.querySelector('.leaflet-popup-content .custom-popup');
-    if (popup) {
-      const imgElement = popup.querySelector('.popup-image');
-      if (imgElement) {
-        imgElement.src = currentImages[currentImageIndex].thumbnail;
-        imgElement.setAttribute('data-index', currentImageIndex);
-        popup.querySelector('.popup-image-counter').textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
-        console.log(`Punto ${pointId} - Imagen actualizada en popup [index: ${currentImageIndex}]: ${currentImages[currentImageIndex].thumbnail}`);
-      } else {
-        console.error(`Punto ${pointId} - No se encontró la imagen en el popup`);
-      }
-    } else {
-      console.error(`Punto ${pointId} - No se encontró el popup`);
+  const popup = document.querySelector('.leaflet-popup-content .custom-popup');
+  if (popup) {
+    const imgElement = popup.querySelector('.popup-image');
+    if (imgElement) {
+      imgElement.src = currentImages[currentImageIndex].thumbnail;
+      imgElement.setAttribute('data-index', currentImageIndex);
+      popup.querySelector('.popup-image-counter').textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
     }
-  } catch (error) {
-    console.error(`Punto ${pointId} - Error en navigatePopupImages:`, error);
   }
 }
 
