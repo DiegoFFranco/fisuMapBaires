@@ -140,6 +140,8 @@ function navigatePopupImages(direction, pointId, layer) {
   if (pointId !== currentPointId) {
     console.warn(`Punto ${pointId} - Actualizando currentPointId para sincronizar con el popup actual.`);
     currentPointId = pointId; // Sincronizar el ID del punto actual
+    currentImages = fullUrls.get(pointId) || []; // Actualizar imágenes del punto actual
+    currentImageIndex = 0; // Reiniciar índice de imagen
   }
 
   if (!currentImages || currentImages.length === 0) {
