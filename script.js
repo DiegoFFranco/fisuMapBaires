@@ -292,8 +292,10 @@ function navigateImages(direction, layer, pointId) {
     return;
   }
   currentImageIndex = (currentImageIndex + direction + currentImages.length) % currentImages.length;
-  const url = fullUrls.get(pointId)[currentImageIndex];
-  console.log(`Punto ${pointId} - Navegando en overlay a imagen [index: ${currentImageIndex}]: ${url}`);
+  // Usar la propiedad full del objeto de imagen actual
+  const fullImageUrl = currentImages[currentImageIndex].full;
+  
+  console.log(`Punto ${pointId} - Navegando en overlay a imagen [index: ${currentImageIndex}]: ${fullImageUrl}`);
 
   const overlay = document.getElementById('imageOverlay');
   const navButtons = currentImages.length > 1 ? `
@@ -303,9 +305,9 @@ function navigateImages(direction, layer, pointId) {
 
   overlay.innerHTML = `
     ${navButtons}
-    <img src="${url}" style="border-color: ${layersConfig[layer].color}">
+    <img src="${fullImageUrl}" style="border-color: ${layersConfig[layer].color}">
   `;
-  console.log(`Punto ${pointId} - Mostrando imagen en overlay [index: ${currentImageIndex}]: ${url}`);
+  console.log(`Punto ${pointId} - Mostrando imagen en overlay [index: ${currentImageIndex}]: ${fullImageUrl}`);
 }
 
 async function loadPoints() {
