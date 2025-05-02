@@ -221,14 +221,21 @@ function navigatePopupImages(direction, pointId, layer, container) {
     imgElement.dataset.index = currentImageIndex;
     counterElement.textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
 
+    // Mostrar todas las imágenes del punto con sus tamaños
     console.log(`Punto ${pointId} - Todas las imágenes del punto:`);
     currentImages.forEach((img, index) => {
-      console.log(`  Imagen ${index + 1}:`, { thumbnail: img.thumbnail, full: img.full });
+      console.log(`  Imagen ${index + 1}:`, {
+        "tamaño: thumbnail": img.thumbnail,
+        "tamaño: medium": img.medium,
+        "tamaño: full": img.full
+      });
     });
 
-    console.log(`Punto ${pointId} - Imagen seleccionada:`, { 
-      thumbnail: currentImages[currentImageIndex].thumbnail, 
-      full: currentImages[currentImageIndex].full 
+    // Mostrar la imagen actual seleccionada con sus tamaños
+    console.log(`Punto ${pointId} - Imagen seleccionada:`, {
+      "tamaño: thumbnail": currentImages[currentImageIndex].thumbnail,
+      "tamaño: medium": currentImages[currentImageIndex].medium,
+      "tamaño: full": currentImages[currentImageIndex].full
     });
   } else {
     console.error(`Punto ${pointId} - No se encontró el contenedor de la imagen o el contador`);
