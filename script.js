@@ -99,7 +99,7 @@ function createPopupContentDynamic(title, user, description, address, layer, ima
     console.log(`Punto ${id} - Imagen actual en el popup:`, { thumbnail: imageUrls[0].thumbnail, full: imageUrls[0].full });
   }
 
-  const container = L.DomUtil.create('div', 'custom-popup');
+  const container = L.DomUtil.create('div', 'custom-popup leaflet-popup-content-wrapper');
   container.style.borderColor = layersConfig[layer].color;
 
   const titleElement = L.DomUtil.create('span', 'title', container);
@@ -117,6 +117,7 @@ function createPopupContentDynamic(title, user, description, address, layer, ima
   const statusElement = L.DomUtil.create('div', 'detail', container);
   statusElement.innerHTML = `<b>Estado:</b> ${status}`;
 
+  
   if (imageUrls.length > 0) {
     const imageContainer = L.DomUtil.create('div', 'popup-image-container', container);
 
