@@ -86,7 +86,7 @@ function clearImageCache(pointId) {
 function createPopupContentDynamic(title, user, description, address, layer, imageUrls, status, horarios, id) {
   console.log(`Punto ${id} - Generando popup dinámico`, { title, user, description, address, layer, imageUrls, status, horarios });
   console.log(`Generando popup para el punto ${id} con imágenes:`, imageUrls);
-  console.log(`Imagen asignada al popup: ${imgElement.src}`);
+  //console.log(`Imagen asignada al popup: ${imgElement.src}`);
   // Actualizar `fullUrls` con las URLs completas
   fullUrls.set(id, imageUrls.map(img => img.full));
 
