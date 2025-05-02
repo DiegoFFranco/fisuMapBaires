@@ -84,6 +84,12 @@ function clearImageCache(pointId) {
 }
 
 function createPopupContentDynamic(title, user, description, address, layer, imageUrls, status, horarios, id) {
+  // Actualizar las variables globales al crear el popup
+  currentPointId = id;
+  currentImages = imageUrls;
+  currentImageIndex = 0;
+  fullUrls.set(id, imageUrls);
+
   console.log(`Punto ${id} - Todas las imágenes del punto:`);
   imageUrls.forEach((img, index) => {
     console.log(`  Imagen ${index + 1}:`, { thumbnail: img.thumbnail, full: img.full });
@@ -93,11 +99,9 @@ function createPopupContentDynamic(title, user, description, address, layer, ima
     console.log(`Punto ${id} - Imagen actual en el popup:`, { thumbnail: imageUrls[0].thumbnail, full: imageUrls[0].full });
   }
 
-  // Crear el contenedor principal del popup
   const container = L.DomUtil.create('div', 'custom-popup');
   container.style.backgroundColor = layersConfig[layer].color;
 
-  // Agregar contenido estático
   const titleElement = L.DomUtil.create('span', 'title', container);
   titleElement.textContent = title;
 
@@ -113,7 +117,6 @@ function createPopupContentDynamic(title, user, description, address, layer, ima
   const statusElement = L.DomUtil.create('div', 'detail', container);
   statusElement.innerHTML = `<b>Estado:</b> ${status}`;
 
-  // Agregar contenedor de imágenes
   if (imageUrls.length > 0) {
     const imageContainer = L.DomUtil.create('div', 'popup-image-container', container);
 
@@ -199,7 +202,7 @@ function navigatePopupImages(direction, pointId, layer, container) {
   if (pointId !== currentPointId) {
     console.warn(`Punto ${pointId} - Actualizando currentPointId para sincronizar con el popup actual.`);
     currentPointId = pointId;
-    currentImages = fullUrls.get(pointId) || [];
+    currentImages = fullUrls.get(pointId);
     currentImageIndex = 0;
   }
 
@@ -218,14 +221,15 @@ function navigatePopupImages(direction, pointId, layer, container) {
     imgElement.dataset.index = currentImageIndex;
     counterElement.textContent = `${currentImageIndex + 1} de ${currentImages.length}`;
 
-    // Mostrar todas las imágenes del punto
     console.log(`Punto ${pointId} - Todas las imágenes del punto:`);
     currentImages.forEach((img, index) => {
       console.log(`  Imagen ${index + 1}:`, { thumbnail: img.thumbnail, full: img.full });
     });
 
-    // Mostrar la imagen seleccionada
-    console.log(`Punto ${pointId} - Imagen seleccionada:`, { thumbnail: currentImages[currentImageIndex].thumbnail, full: currentImages[currentImageIndex].full });
+    console.log(`Punto ${pointId} - Imagen seleccionada:`, { 
+      thumbnail: currentImages[currentImageIndex].thumbnail, 
+      full: currentImages[currentImageIndex].full 
+    });
   } else {
     console.error(`Punto ${pointId} - No se encontró el contenedor de la imagen o el contador`);
   }
