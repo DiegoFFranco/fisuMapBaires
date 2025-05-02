@@ -185,9 +185,11 @@ body {
 }
 
 .custom-popup {
+  background-color: white !important;
+  color: black !important;
   width: 300px;
   padding: 10px;
-  border: none;
+  border: 3px solid;
   border-radius: 8px;
   box-sizing: border-box;
 }
