@@ -63,24 +63,24 @@ Object.keys(layersConfig).forEach(layer => {
 
 // Función para precargar thumbnails
 function preloadThumbnails(images) {
-    images.slice(0, 5).forEach(image => {
-        if (!imageCache.has(image.thumbnail)) {
-            const img = new Image();
-            img.src = image.thumbnail;
-            imageCache.set(image.thumbnail, img);
-        }
-    });
+  images.slice(0, 5).forEach(image => {
+    if (!imageCache.has(image.thumbnail)) {
+      const img = new Image();
+      img.src = image.thumbnail;
+      imageCache.set(image.thumbnail, img);
+    }
+  });
 }
 
 // Función para limpiar caché y URLs full
 function clearImageCache(pointId) {
-    if (pointId !== currentPointId) {
-        imageCache.clear();
-        fullUrls.clear();
-        currentPointId = null;
-        currentImages = [];
-        currentImageIndex = -1;
-    }
+  if (pointId !== currentPointId) {
+    imageCache.clear();
+    fullUrls.clear();
+    currentPointId = null;
+    currentImages = [];
+    currentImageIndex = -1;
+  }
 }
 
 function createPopupContentDynamic(title, user, description, address, layer, imageUrls, status, horarios, id) {
@@ -120,10 +120,17 @@ function createPopupContentDynamic(title, user, description, address, layer, ima
   if (imageUrls.length > 0) {
     const imageContainer = L.DomUtil.create('div', 'popup-image-container', container);
 
+    // En createPopupContentDynamic, donde se crea imgElement
     const imgElement = L.DomUtil.create('img', 'popup-image', imageContainer);
     imgElement.src = imageUrls[0].thumbnail;
     imgElement.alt = 'Imagen del punto';
     imgElement.dataset.index = 0;
+
+    // Agregar el evento de clic
+    imgElement.onclick = () => {
+      console.log(`Punto ${id} - Clic en imagen del popup [index: ${currentImageIndex}]: ${imageUrls[currentImageIndex].full}`);
+      showOverlay(imageUrls, layer, currentImageIndex, id);
+    };
 
     const counterElement = L.DomUtil.create('div', 'popup-image-counter', imageContainer);
     counterElement.textContent = `1 de ${imageUrls.length}`;
@@ -373,20 +380,20 @@ async function loadPoints() {
         });
         clusterGroups[category].addLayer(layerFeature);
       } */
-        onEachFeature: (feature, layerFeature) => {
-          const { name, description, user, address, imageUrls, category, status, horarios, id } = feature.properties;
-          const popupContent = createPopupContentDynamic(name, user, description, address, category, imageUrls, status, horarios, id);
-        
-          // Vincular el popup al marcador
-          layerFeature.bindPopup(popupContent, { className: '' });
-        
-          // Agregar el marcador al clusterGroup correspondiente
-          if (clusterGroups[category]) {
-            clusterGroups[category].addLayer(layerFeature);
-          } else {
-            console.error(`Categoría no encontrada en clusterGroups: ${category}`);
-          }
+      onEachFeature: (feature, layerFeature) => {
+        const { name, description, user, address, imageUrls, category, status, horarios, id } = feature.properties;
+        const popupContent = createPopupContentDynamic(name, user, description, address, category, imageUrls, status, horarios, id);
+
+        // Vincular el popup al marcador
+        layerFeature.bindPopup(popupContent, { className: '' });
+
+        // Agregar el marcador al clusterGroup correspondiente
+        if (clusterGroups[category]) {
+          clusterGroups[category].addLayer(layerFeature);
+        } else {
+          console.error(`Categoría no encontrada en clusterGroups: ${category}`);
         }
+      }
     });
 
     Object.keys(counts).forEach(layer => {
@@ -726,14 +733,14 @@ async function submitPoint() {
     properties: {
       name: title,
       description: description,
-      user: user,      
+      user: user,
       address: address || 'Sin dirección',
       imageUrls: imageUrls,
       timestamp: serverTimestamp(),
       category: category,
       status: 'temporal',
       horarios: horarios
-    }  
+    }
   };
 
   console.log('Punto enviado:', pointData);
@@ -950,7 +957,7 @@ if (currentLocationBtn) {
 
 // Limpiar caché al cerrar popup
 map.on('popupclose', () => {
-    clearImageCache(currentPointId);
+  clearImageCache(currentPointId);
 });
 
 window.startApp = function () {
