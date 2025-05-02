@@ -100,7 +100,7 @@ function createPopupContentDynamic(title, user, description, address, layer, ima
   }
 
   const container = L.DomUtil.create('div', 'custom-popup');
-  container.style.backgroundColor = layersConfig[layer].color;
+  container.style.borderColor = layersConfig[layer].color;
 
   const titleElement = L.DomUtil.create('span', 'title', container);
   titleElement.textContent = title;
