@@ -99,7 +99,8 @@ function createPopupContentDynamic(title, user, description, address, layer, ima
     console.log(`Punto ${id} - Imagen actual en el popup:`, { thumbnail: imageUrls[0].thumbnail, full: imageUrls[0].full });
   }
 
-  const container = L.DomUtil.create('div', 'custom-popup leaflet-popup-content-wrapper leaflet-popup-content');
+  const wrapper = L.DomUtil.create('div', 'leaflet-popup-content-wrapper');
+  const container = L.DomUtil.create('div', 'custom-popup leaflet-popup-content', wrapper);
   container.style.borderColor = layersConfig[layer].color;
 
   const titleElement = L.DomUtil.create('span', 'title', container);
@@ -117,7 +118,7 @@ function createPopupContentDynamic(title, user, description, address, layer, ima
   const statusElement = L.DomUtil.create('div', 'detail', container);
   statusElement.innerHTML = `<b>Estado:</b> ${status}`;
 
-  
+
   if (imageUrls.length > 0) {
     const imageContainer = L.DomUtil.create('div', 'popup-image-container', container);
 
@@ -150,7 +151,8 @@ function createPopupContentDynamic(title, user, description, address, layer, ima
     noImageElement.textContent = 'No hay imágenes disponibles';
   }
 
-  return container;
+  return wrapper;  // Retornamos wrapper en lugar de container
+
 }
 
 function createPopupContent(title, user, description, address, layer, imageUrls, status, horarios, id) {
@@ -295,7 +297,7 @@ function navigateImages(direction, layer, pointId) {
   currentImageIndex = (currentImageIndex + direction + currentImages.length) % currentImages.length;
   // Usar la propiedad full del objeto de imagen actual
   const fullImageUrl = currentImages[currentImageIndex].full;
-  
+
   console.log(`Punto ${pointId} - Navegando en overlay a imagen [index: ${currentImageIndex}]: ${fullImageUrl}`);
 
   const overlay = document.getElementById('imageOverlay');
