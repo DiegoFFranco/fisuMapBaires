@@ -269,7 +269,8 @@ function showOverlay(imageUrls, layer, index, pointId) {
   currentImages = imageUrls;
   currentImageIndex = index;
   const overlay = document.getElementById('imageOverlay');
-  const fullImageUrl = fullUrls.get(pointId)[index];
+  // Cambiar esto:
+  const fullImageUrl = imageUrls[index].full;  // Usar directamente la URL full del objeto
 
   console.log(`Punto ${pointId} - Mostrando overlay con imagen [index: ${index}]: ${fullImageUrl}`);
 
